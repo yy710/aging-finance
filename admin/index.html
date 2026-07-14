@@ -14,7 +14,7 @@
       <div class="brand-mark" aria-hidden="true">养</div>
       <p class="eyebrow">工银养老金融</p>
       <h1>网站内容管理</h1>
-      <p class="muted">请输入私有配置文件中设置的管理密码。</p>
+      <p class="muted">请输入管理密码后继续。</p>
       <label for="login-password">管理密码</label>
       <input id="login-password" name="password" type="password" autocomplete="current-password" required autofocus>
       <button class="button button-primary button-block" type="submit">登录</button>
@@ -25,11 +25,11 @@
   <div id="admin-view" hidden>
     <header class="topbar">
       <div>
-        <p class="eyebrow">AGING FINANCE CMS</p>
+        <p class="eyebrow">工银养老金融</p>
         <h1>养老金融网站管理</h1>
       </div>
       <div class="topbar-actions">
-        <button id="generate-button" class="button button-primary" type="button">重新生成全部网站</button>
+        <button id="generate-button" class="button button-primary" type="button">发布全部更改</button>
         <button id="logout-button" class="button button-ghost" type="button">退出</button>
       </div>
     </header>
@@ -40,80 +40,97 @@
       <aside class="panel tree-panel">
         <div class="panel-heading">
           <div>
-            <p class="section-label">页面结构</p>
-            <h2>页面树</h2>
+            <p class="section-label">网站栏目</p>
+            <h2>页面结构</h2>
           </div>
           <button id="new-page-button" class="icon-button" type="button" title="新增页面" aria-label="新增页面">+</button>
         </div>
-        <nav id="page-tree" aria-label="页面树"></nav>
+        <nav id="page-tree" aria-label="网站页面"></nav>
       </aside>
 
       <section class="editor-column">
         <article class="panel">
           <div class="panel-heading">
             <div>
-              <p class="section-label">PAGE</p>
+              <p class="section-label">页面内容</p>
               <h2 id="page-form-heading">编辑页面</h2>
             </div>
             <div class="inline-actions">
-              <a id="preview-link" class="button button-secondary" href="/" target="_blank" rel="noopener">查看生成页</a>
+              <a id="preview-link" class="button button-secondary" href="/" target="_blank" rel="noopener">打开完整页面</a>
               <button id="delete-page-button" class="button button-danger" type="button">删除页面</button>
             </div>
           </div>
 
+          <section id="page-preview" class="page-preview" aria-labelledby="page-preview-title">
+            <div class="preview-heading">
+              <div>
+                <strong id="page-preview-title">页面预览</strong>
+                <small id="page-preview-note">选择页面后即可查看</small>
+              </div>
+              <button id="refresh-preview-button" class="button button-ghost button-small" type="button">刷新预览</button>
+            </div>
+            <div class="page-preview-frame">
+              <iframe id="page-preview-frame" title="当前页面预览" loading="lazy"></iframe>
+              <div id="page-preview-fallback" class="page-preview-fallback" hidden></div>
+            </div>
+          </section>
+
           <form id="page-form" class="form-grid">
             <input id="page-id" name="id" type="hidden">
+            <input name="slug" type="hidden">
             <label class="field field-wide">
               <span>页面标题</span>
               <input name="title" required maxlength="120">
             </label>
             <label class="field">
-              <span>Slug</span>
-              <input name="slug" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" placeholder="page-slug">
-              <small>首页留空；其他页面使用小写字母、数字和连字符。</small>
-            </label>
-            <label class="field">
-              <span>父页面</span>
+              <span>所属上级页面</span>
               <select id="page-parent" name="parent_id"></select>
             </label>
             <label class="field">
-              <span>模板</span>
+              <span>页面展示方式</span>
               <select name="template_type" required>
-                <option value="home">home</option>
-                <option value="card-list">card-list</option>
-                <option value="content">content</option>
-                <option value="link-list">link-list</option>
+                <option value="home">网站首页</option>
+                <option value="card-list">图片入口列表</option>
+                <option value="content">正文内容页</option>
+                <option value="link-list">文字入口列表</option>
               </select>
             </label>
             <label class="field">
-              <span>装饰字</span>
-              <input name="decorative_character" maxlength="8" placeholder="惠">
-            </label>
-            <label class="field field-wide">
-              <span>标题图片路径</span>
-              <input name="title_image" list="media-paths" placeholder="/assets/images/titles/example.png">
-            </label>
-            <label class="field field-wide">
-              <span>背景主题或图片路径</span>
-              <input name="background_image" list="media-paths" placeholder="hui 或 /uploads/example.png">
-            </label>
-            <label class="field field-wide">
-              <span>内容（允许经过服务端清洗的安全 HTML）</span>
-              <textarea name="content" rows="8" placeholder="<p>页面内容</p>"></textarea>
+              <span>页面代表字</span>
+              <input name="decorative_character" maxlength="8" placeholder="例如：惠">
             </label>
             <label class="field">
-              <span>排序</span>
+              <span>显示顺序</span>
               <input name="sort_order" type="number" value="0">
             </label>
+            <label class="field field-wide">
+              <span>标题图片</span>
+              <div class="image-choice-row">
+                <select id="page-title-image" name="title_image"></select>
+                <button class="image-thumb-button" type="button" data-preview-field="page-title-image" aria-label="查看标题图片" title="查看大图">
+                  <span>查看</span>
+                </button>
+              </div>
+            </label>
+            <label class="field field-wide">
+              <span>页面背景</span>
+              <select id="page-background" name="background_image"></select>
+            </label>
+            <div class="field field-wide">
+              <span>页面正文</span>
+              <input id="page-content-value" name="content" type="hidden">
+              <div id="page-content-editor" class="content-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="在这里输入页面正文"></div>
+              <small>可直接输入、粘贴和排版文字。</small>
+            </div>
             <label class="field">
-              <span>状态</span>
+              <span>发布状态</span>
               <select name="status">
                 <option value="published">已发布</option>
-                <option value="draft">草稿</option>
+                <option value="draft">暂不发布</option>
               </select>
             </label>
             <div class="form-actions field-wide">
-              <button class="button button-primary" type="submit">保存页面并重新生成</button>
+              <button class="button button-primary" type="submit">保存页面</button>
               <span id="page-form-message" class="form-message" role="status"></span>
             </div>
           </form>
@@ -122,63 +139,67 @@
         <article id="cards-panel" class="panel">
           <div class="panel-heading">
             <div>
-              <p class="section-label">LINKS</p>
-              <h2>Card 与文字链接</h2>
+              <p class="section-label">页面入口</p>
+              <h2>图片与文字入口</h2>
             </div>
-            <button id="new-card-button" class="button button-secondary" type="button">新增 Card</button>
+            <button id="new-card-button" class="button button-secondary" type="button">新增入口</button>
           </div>
           <div id="card-list" class="admin-card-list"></div>
 
           <form id="card-form" class="form-grid card-editor" hidden>
             <input name="id" type="hidden">
             <label class="field">
-              <span>类型</span>
+              <span>入口样式</span>
               <select name="item_type">
-                <option value="image_card">图文 Card</option>
-                <option value="text_link">文字链接</option>
+                <option value="image_card">图片入口</option>
+                <option value="text_link">文字入口</option>
               </select>
             </label>
             <label class="field">
-              <span>状态</span>
+              <span>发布状态</span>
               <select name="status">
                 <option value="published">已发布</option>
-                <option value="draft">草稿</option>
+                <option value="draft">暂不发布</option>
               </select>
             </label>
             <label class="field field-wide">
-              <span>标题</span>
+              <span>入口标题</span>
               <input name="title" required maxlength="180">
             </label>
             <label class="field field-wide">
-              <span>说明</span>
+              <span>补充说明</span>
               <textarea name="description" rows="3"></textarea>
             </label>
             <label class="field field-wide">
-              <span>图片路径</span>
-              <div class="input-action">
-                <input name="image_path" list="media-paths" placeholder="/uploads/example.png">
-                <button id="upload-trigger" class="button button-secondary" type="button">上传图片</button>
+              <span>入口图片</span>
+              <div class="image-choice-row">
+                <select id="card-image" name="image_path"></select>
+                <button class="image-thumb-button" type="button" data-preview-field="card-image" aria-label="查看入口图片" title="查看大图">
+                  <span>查看</span>
+                </button>
+                <button id="upload-trigger" class="button button-secondary" type="button">上传新图片</button>
                 <input id="upload-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
               </div>
             </label>
             <label class="field field-wide">
-              <span>图片替代文字</span>
+              <span>图片文字说明</span>
               <input name="image_alt" maxlength="180">
+              <small>请简要描述图片内容，方便使用读屏功能的访客理解。</small>
             </label>
             <label class="field">
-              <span>内部目标页面</span>
+              <span>点击后打开本站页面</span>
               <select id="card-target" name="target_page_id"></select>
             </label>
             <label class="field">
-              <span>或外部 URL</span>
-              <input name="external_url" type="url" placeholder="https://example.com">
+              <span>或打开其他网站</span>
+              <input name="external_url" type="url" placeholder="请粘贴完整网站地址">
             </label>
             <label class="field">
-              <span>排序</span>
+              <span>显示顺序</span>
               <input name="sort_order" type="number" value="0">
             </label>
             <div class="form-actions field-wide">
-              <button class="button button-primary" type="submit">保存 Card</button>
+              <button class="button button-primary" type="submit">保存入口</button>
               <button id="cancel-card-button" class="button button-ghost" type="button">取消</button>
               <span id="card-form-message" class="form-message" role="status"></span>
             </div>
@@ -189,17 +210,24 @@
       <aside class="panel media-panel">
         <div class="panel-heading">
           <div>
-            <p class="section-label">MEDIA</p>
-            <h2>媒体库</h2>
+            <p class="section-label">图片管理</p>
+            <h2>图片库</h2>
           </div>
         </div>
-        <p class="muted compact">PNG / JPEG / WebP，最大 5 MB。替换同格式文件后会自动更新内容哈希。</p>
+        <p class="muted compact">点击任意图片可查看大图。上传图片单张不超过 5 MB。</p>
         <div id="media-list" class="media-list"></div>
       </aside>
     </main>
   </div>
 
-  <datalist id="media-paths"></datalist>
+  <dialog id="image-preview-dialog" class="image-preview-dialog">
+    <button id="close-image-preview" class="dialog-close" type="button" aria-label="关闭预览">×</button>
+    <figure>
+      <img id="image-preview-large" alt="">
+      <figcaption id="image-preview-caption"></figcaption>
+    </figure>
+  </dialog>
+
   <script src="/admin/app.js" defer></script>
 </body>
 </html>

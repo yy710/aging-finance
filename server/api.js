@@ -6,6 +6,37 @@ const multer = require('multer');
 const { createUpload, replaceStoredImage, storeNewImage } = require('./media');
 const { sanitizeContent } = require('./sanitize');
 
+const LIBRARY_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
+
+function collectImageFiles(directory, urlPrefix, relativeDirectory = '') {
+  const currentDirectory = path.join(directory, relativeDirectory);
+  if (!fs.existsSync(currentDirectory)) return [];
+
+  const images = [];
+  for (const entry of fs.readdirSync(currentDirectory, { withFileTypes: true })) {
+    if (entry.isSymbolicLink()) continue;
+    const relativePath = path.join(relativeDirectory, entry.name);
+    if (entry.isDirectory()) {
+      images.push(...collectImageFiles(directory, urlPrefix, relativePath));
+      continue;
+    }
+    if (!entry.isFile() || !LIBRARY_IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) continue;
+    images.push({
+      relative_path: `${urlPrefix}/${relativePath.split(path.sep).map(encodeURIComponent).join('/')}`,
+      original_name: entry.name,
+      replaceable: false,
+    });
+  }
+  return images;
+}
+
+function listImageLibrary(config, uploadedMedia) {
+  const uploadedImages = uploadedMedia.map((media) => ({ ...media, replaceable: true }));
+  const publicImages = collectImageFiles(config.assetsDir, '/assets');
+  return [...uploadedImages, ...publicImages]
+    .sort((a, b) => String(a.original_name).localeCompare(String(b.original_name), 'zh-CN'));
+}
+
 function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
@@ -131,7 +162,8 @@ function createApiRouter({ config, service, generate }) {
   }));
 
   router.get('/media', (_req, res) => {
-    res.json({ media: service.listMedia() });
+    const media = service.listMedia();
+    res.json({ media, images: listImageLibrary(config, media) });
   });
 
   router.post('/media', upload.single('image'), asyncRoute(async (req, res) => {
@@ -227,7 +259,9 @@ function apiErrorHandler(error, _req, res, _next) {
 module.exports = {
   apiErrorHandler,
   asyncRoute,
+  collectImageFiles,
   createApiRouter,
+  listImageLibrary,
   markPublicationFailure,
   publicationDetails,
 };

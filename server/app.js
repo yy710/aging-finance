@@ -26,6 +26,13 @@ function noCache(_req, res, next) {
   next();
 }
 
+function allowSameOriginPreview(_req, res, next) {
+  const policy = String(res.get('Content-Security-Policy') || '');
+  res.set('Content-Security-Policy', policy.replace("frame-ancestors 'none'", "frame-ancestors 'self'"));
+  res.set('X-Frame-Options', 'SAMEORIGIN');
+  next();
+}
+
 function rejectUnsafeGeneratedAssetPath(req, res, next) {
   const rawPath = String(req.originalUrl || req.url || '').split('?', 1)[0];
   let decodedPath;
@@ -133,6 +140,7 @@ function createApp({ config, service, generate, authOptions } = {}) {
   }
 
   app.use(noCache);
+  app.use(allowSameOriginPreview);
   app.use(express.static(config.generatedDir, {
     dotfiles: 'deny',
     etag: true,
@@ -154,6 +162,7 @@ function createApp({ config, service, generate, authOptions } = {}) {
 
 module.exports = {
   VERSION_PATTERN,
+  allowSameOriginPreview,
   createApp,
   noCache,
   noStore,
