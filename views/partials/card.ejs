@@ -1,6 +1,6 @@
 <%
   const cardData = (typeof card !== 'undefined' && card) || {};
-  const cardAsset = typeof asset === 'function' ? asset : (value) => value;
+  const cardPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
   const cardPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
   const cardUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
   const cardTitle = cardData.title || cardData.name || '';
@@ -15,7 +15,7 @@
     if (cardUrlMap instanceof Map) resolvedTarget = cardUrlMap.get(targetId) || cardUrlMap.get(String(targetId)) || '';
     else resolvedTarget = cardUrlMap[targetId] || cardUrlMap[String(targetId)] || '';
   }
-  const cardHref = resolvedTarget || cardData.external_url || cardData.externalUrl || '#';
+  const cardHref = cardPublicUrl(resolvedTarget || cardData.external_url || cardData.externalUrl || '#');
   const isExternal = Boolean(cardData.external_url || cardData.externalUrl || /^https?:\/\//iu.test(cardHref));
   const disabled = cardHref === '#';
   const cardAlt = cardData.image_alt || cardData.imageAlt || cardTitle;
@@ -24,6 +24,6 @@
 %>
 <article class="visual-card<%= classroom ? ' visual-card--classroom' : '' %>">
   <a class="visual-card__link<%= disabled ? ' is-disabled' : '' %>" href="<%= cardHref %>"<% if (isExternal) { %> target="_blank" rel="noopener noreferrer"<% } %><% if (disabled) { %> aria-disabled="true" data-disabled-link<% } %>>
-    <img class="visual-card__artwork" src="<%= cardAsset(cardImage) %>" alt="<%= cardAlt %>" loading="lazy" decoding="async">
+    <img class="visual-card__artwork" src="<%= cardPublicUrl(cardImage) %>" alt="<%= cardAlt %>" loading="lazy" decoding="async">
   </a>
 </article>

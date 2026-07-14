@@ -1,6 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const { normalizePublicBasePath } = require('./public-url');
+
 const ROOT_DIR = path.resolve(__dirname, '..');
 
 function readPrivateConfig(filePath) {
@@ -36,6 +38,9 @@ function loadConfig(overrides = {}) {
     host: overrides.host || process.env.HOST || '127.0.0.1',
     port: Number(overrides.port || process.env.PORT || 3100),
     nodeEnv: overrides.nodeEnv || process.env.NODE_ENV || 'development',
+    publicBasePath: normalizePublicBasePath(
+      overrides.publicBasePath ?? process.env.PUBLIC_BASE_PATH ?? '',
+    ),
     dbPath: overrides.dbPath || process.env.DB_PATH || path.join(ROOT_DIR, 'data', 'site.db'),
     generatedDir: overrides.generatedDir || path.join(ROOT_DIR, 'public-generated'),
     assetsDir: overrides.assetsDir || path.join(ROOT_DIR, 'public-assets'),

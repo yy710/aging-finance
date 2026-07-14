@@ -1,7 +1,7 @@
 <%
   const homeSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
   const homePage = (typeof page !== 'undefined' && page) || {};
-  const homeAsset = typeof asset === 'function' ? asset : (value) => value;
+  const homePublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
   const homePageUrl = typeof pageUrl === 'function' ? pageUrl : null;
   const homeUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
   const hasChildrenSource = typeof children !== 'undefined' || Array.isArray(homePage.children);
@@ -37,14 +37,14 @@
     return '';
   }
   function entryHref(entry) {
-    if (entry.url || entry.target_url || entry.external_url) return entry.url || entry.target_url || entry.external_url;
+    if (entry.url || entry.target_url || entry.external_url) return homePublicUrl(entry.url || entry.target_url || entry.external_url);
     const id = entry.id ?? entry.target_page_id ?? null;
     if (id !== null && homePageUrl) {
       try { return homePageUrl(id) || '#'; } catch (_) { return '#'; }
     }
     if (id !== null && homeUrlMap) {
-      if (homeUrlMap instanceof Map) return homeUrlMap.get(id) || homeUrlMap.get(String(id)) || '#';
-      return homeUrlMap[id] || homeUrlMap[String(id)] || '#';
+      if (homeUrlMap instanceof Map) return homePublicUrl(homeUrlMap.get(id) || homeUrlMap.get(String(id)) || '#');
+      return homePublicUrl(homeUrlMap[id] || homeUrlMap[String(id)] || '#');
     }
     return '#';
   }
@@ -56,33 +56,33 @@
 %>
 <!doctype html>
 <html lang="zh-CN">
-<%- include('partials/head', { site: homeSite, page: homePage, asset: homeAsset }) %>
+<%- include('partials/head', { site: homeSite, page: homePage, publicUrl: homePublicUrl, publicBasePath: typeof publicBasePath === 'string' ? publicBasePath : '' }) %>
 <body class="public-site template-home theme-home">
   <a class="skip-link" href="#main-content">跳至主要内容</a>
   <div class="page-canvas page-canvas--home">
-    <%- include('partials/page-background', { page: homePage, theme: 'home', asset: homeAsset }) %>
+    <%- include('partials/page-background', { page: homePage, theme: 'home', publicUrl: homePublicUrl }) %>
     <main class="home-main" id="main-content">
       <section class="home-hero" aria-labelledby="home-heading">
-        <img class="home-hero__logo" src="<%= homeAsset(homeLogo) %>" alt="<%= siteName %>" width="476" height="65" fetchpriority="high">
+        <img class="home-hero__logo" src="<%= homePublicUrl(homeLogo) %>" alt="<%= siteName %>" width="476" height="65" fetchpriority="high">
         <h1 class="home-hero__heading" id="home-heading">
-          <img src="<%= homeAsset(homeTitleImage) %>" alt="<%= homeSite.home_title || '如意人生 养老金融全面解决方案' %>" width="588" height="177">
+          <img src="<%= homePublicUrl(homeTitleImage) %>" alt="<%= homeSite.home_title || '如意人生 养老金融全面解决方案' %>" width="588" height="177">
         </h1>
-        <img class="home-hero__banner" src="<%= homeAsset(homeBanner) %>" alt="云南养老金融生态圈" width="576" height="70">
-        <img class="home-hero__tagline" src="<%= homeAsset(homeTagline) %>" alt="<%= homeSite.home_subtitle || '一点接入 养老无忧' %>" width="398" height="46">
+        <img class="home-hero__banner" src="<%= homePublicUrl(homeBanner) %>" alt="云南养老金融生态圈" width="576" height="70">
+        <img class="home-hero__tagline" src="<%= homePublicUrl(homeTagline) %>" alt="<%= homeSite.home_subtitle || '一点接入 养老无忧' %>" width="398" height="46">
       </section>
       <nav class="home-entry-nav" aria-label="养老金融服务分类">
         <ul class="home-entry-grid<%= homeEntries.length === 5 ? ' home-entry-grid--signature' : '' %>">
           <% homeEntries.forEach((entry) => { const entryKey = entryTheme(entry); const entryImage = entry.home_icon || entry.icon_image || entryImages[entryKey] || entry.title_image; const href = entryHref(entry); if (!entryImage) throw new Error(`首页入口“${entry.title || ''}”缺少图片`); %>
             <li class="home-entry">
               <a class="home-entry__link<%= href === '#' ? ' is-disabled' : '' %>" href="<%= href %>"<% if (href === '#') { %> aria-disabled="true" data-disabled-link<% } %>>
-                <img src="<%= homeAsset(entryImage) %>" alt="<%= entry.title || entry.decorative_character || '' %>" loading="eager" decoding="async">
+                <img src="<%= homePublicUrl(entryImage) %>" alt="<%= entry.title || entry.decorative_character || '' %>" loading="eager" decoding="async">
               </a>
             </li>
           <% }); %>
         </ul>
       </nav>
     </main>
-    <%- include('partials/footer', { site: homeSite, page: homePage, theme: 'home', asset: homeAsset }) %>
+    <%- include('partials/footer', { site: homeSite, page: homePage, theme: 'home', publicUrl: homePublicUrl }) %>
   </div>
 </body>
 </html>

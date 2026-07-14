@@ -6,6 +6,7 @@ const { loadConfig } = require('./config');
 const { ContentService } = require('./content-service');
 const { openDatabase } = require('./database');
 const { createGenerator } = require('./generator');
+const { createPublicUrl } = require('./public-url');
 
 function createRuntime(overrides = {}) {
   const config = overrides.config || loadConfig(overrides.configOverrides);
@@ -18,6 +19,7 @@ function createRuntime(overrides = {}) {
     assetsDir: config.assetsDir,
     uploadsDir: config.uploadsDir,
     database: db,
+    publicBasePath: config.publicBasePath,
   });
   const { app, auth } = createApp({
     config,
@@ -31,6 +33,7 @@ function createRuntime(overrides = {}) {
 async function main() {
   const runtime = createRuntime();
   const { app, config, db, generate, service } = runtime;
+  const publicUrl = createPublicUrl(config.publicBasePath);
   if (service.countPages() > 0 && !fs.existsSync(path.join(config.generatedDir, 'index.html'))) {
     await generate();
   }
@@ -39,8 +42,9 @@ async function main() {
     const instance = app.listen(config.port, config.host, () => resolve(instance));
     instance.once('error', reject);
   });
-  console.log(`养老金融网站已启动：http://${config.host}:${config.port}`);
-  console.log(`管理后台：http://${config.host}:${config.port}/admin/`);
+  console.log(`Express 内部服务已启动：http://${config.host}:${config.port}/`);
+  console.log(`公开网站外部路径：${publicUrl('/')}`);
+  console.log(`管理后台外部路径：${publicUrl('/admin/')}`);
 
   let shuttingDown = false;
   const shutdown = (signal) => {

@@ -10,7 +10,7 @@
   --surface: #fff;
   --surface-warm: #fcfbfa;
   --focus: #9f181f;
-  --middle-texture: url("<%= asset('/assets/images/decor/hui-middle.png') %>");
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/hui-middle.png') %>");
 }
 
 * {
@@ -95,12 +95,12 @@ img {
     );
 }
 
-.theme-home { --middle-texture: url("<%= asset('/assets/images/decor/home-middle.png') %>"); }
-.theme-hui { --middle-texture: url("<%= asset('/assets/images/decor/hui-middle.png') %>"); }
-.theme-yi { --middle-texture: url("<%= asset('/assets/images/decor/yi-middle.png') %>"); }
-.theme-yang { --middle-texture: url("<%= asset('/assets/images/decor/yang-middle.png') %>"); }
-.theme-le { --middle-texture: url("<%= asset('/assets/images/decor/le-middle.png') %>"); }
-.theme-chuan { --middle-texture: url("<%= asset('/assets/images/decor/chuan-middle.png') %>"); }
+.theme-home { --middle-texture: url("<%= publicUrl('/assets/images/decor/home-middle.png') %>"); }
+.theme-hui { --middle-texture: url("<%= publicUrl('/assets/images/decor/hui-middle.png') %>"); }
+.theme-yi { --middle-texture: url("<%= publicUrl('/assets/images/decor/yi-middle.png') %>"); }
+.theme-yang { --middle-texture: url("<%= publicUrl('/assets/images/decor/yang-middle.png') %>"); }
+.theme-le { --middle-texture: url("<%= publicUrl('/assets/images/decor/le-middle.png') %>"); }
+.theme-chuan { --middle-texture: url("<%= publicUrl('/assets/images/decor/chuan-middle.png') %>"); }
 
 .page-background {
   position: absolute;

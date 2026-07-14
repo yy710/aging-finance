@@ -27,6 +27,21 @@
   const cardForm = $('#card-form');
   const contentEditor = $('#page-content-editor');
   const contentValue = $('#page-content-value');
+  const publicBasePath = $('meta[name="public-base-path"]')?.content || '';
+
+  function publicUrl(reference = '/') {
+    if (reference === null || reference === undefined || reference === '') return '';
+    const input = String(reference).trim();
+    if (!input || /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/iu.test(input)) return input;
+    const pathname = input.startsWith('/') ? input : `/${input}`;
+    if (!publicBasePath) return pathname;
+    if (pathname === publicBasePath || pathname.startsWith(`${publicBasePath}/`)) return pathname;
+    return pathname === '/' ? `${publicBasePath}/` : `${publicBasePath}${pathname}`;
+  }
+
+  function pageUrl(page) {
+    return publicUrl(page?.public_url || page?.url || '/');
+  }
 
   function friendlyErrorMessage(message) {
     return String(message || '操作失败，请稍后重试。')
@@ -39,7 +54,7 @@
   }
 
   async function api(path, options = {}) {
-    const response = await fetch(`/api${path}`, {
+    const response = await fetch(publicUrl(`/api${path}`), {
       credentials: 'same-origin',
       headers: options.body instanceof FormData
         ? options.headers
@@ -196,6 +211,13 @@
     return `${label} ${categoryIndex >= 0 ? categoryIndex + 1 : index + 1}`;
   }
 
+  function imagePublicUrl(imageOrPath) {
+    const image = typeof imageOrPath === 'string'
+      ? state.images.find((item) => item.relative_path === imageOrPath)
+      : imageOrPath;
+    return image?.public_url || publicUrl(image?.relative_path || imageOrPath || '');
+  }
+
   function ensureCurrentOption(select, value, label = '当前使用的图片') {
     if (!value || [...select.options].some((option) => option.value === value)) return;
     select.insertAdjacentHTML('beforeend', `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`);
@@ -235,13 +257,13 @@
     const value = field.value;
     button.disabled = !value;
     button.innerHTML = value
-      ? `<img src="${escapeHtml(value)}" alt=""><span>查看大图</span>`
+      ? `<img src="${escapeHtml(imagePublicUrl(value))}" alt=""><span>查看大图</span>`
       : '<span>暂无图片</span>';
   }
 
   function showImagePreview(imagePath, caption) {
     if (!imagePath) return;
-    $('#image-preview-large').src = imagePath;
+    $('#image-preview-large').src = imagePublicUrl(imagePath);
     $('#image-preview-large').alt = caption || '图片预览';
     $('#image-preview-caption').textContent = caption || friendlyImageName(imagePath);
     const dialog = $('#image-preview-dialog');
@@ -263,11 +285,11 @@
     const fallback = $('#page-preview-fallback');
     fallback.hidden = false;
     const cards = state.cards.slice(0, 4).map((card) => card.image_path
-      ? `<img src="${escapeHtml(card.image_path)}" alt="${escapeHtml(card.title)}">`
+      ? `<img src="${escapeHtml(imagePublicUrl(card.image_path) || card.image_url)}" alt="${escapeHtml(card.title)}">`
       : `<span>${escapeHtml(card.title)}</span>`).join('');
     fallback.innerHTML = `
       <div class="draft-preview-canvas">
-        ${page.title_image ? `<img class="draft-preview-title" src="${escapeHtml(page.title_image)}" alt="">` : `<h3>${escapeHtml(page.title)}</h3>`}
+        ${page.title_image ? `<img class="draft-preview-title" src="${escapeHtml(imagePublicUrl(page.title_image))}" alt="">` : `<h3>${escapeHtml(page.title)}</h3>`}
         ${page.contentText ? `<p>${escapeHtml(page.contentText)}</p>` : ''}
         ${cards ? `<div class="draft-preview-cards">${cards}</div>` : '<p class="draft-preview-empty">保存页面入口后会显示在这里。</p>'}
       </div>`;
@@ -281,7 +303,7 @@
       return;
     }
     $('#preview-link').hidden = false;
-    $('#preview-link').href = page.url || '/';
+    $('#preview-link').href = pageUrl(page);
     if (forceLocal || state.pageDirty || page.status !== 'published') {
       showLocalPagePreview(
         forceLocal || state.pageDirty ? formPageSnapshot() : { ...page, contentText: '' },
@@ -292,8 +314,9 @@
     $('#page-preview-fallback').hidden = true;
     const frame = $('#page-preview-frame');
     frame.hidden = false;
-    const separator = String(page.url).includes('?') ? '&' : '?';
-    frame.src = `${page.url}${separator}preview=${Date.now()}`;
+    const previewUrl = pageUrl(page);
+    const separator = previewUrl.includes('?') ? '&' : '?';
+    frame.src = `${previewUrl}${separator}preview=${Date.now()}`;
     $('#page-preview-note').textContent = '网站中的实际显示效果';
   }
 
@@ -337,7 +360,7 @@
     $('#card-list').innerHTML = state.cards.length ? state.cards.map((card, index) => `
       <div class="admin-card-row" data-card-id="${card.id}">
         ${card.image_path
-          ? `<button class="card-thumb-button" type="button" data-preview-image="${escapeHtml(card.image_path)}" data-preview-caption="${escapeHtml(card.title)}" aria-label="查看${escapeHtml(card.title)}图片"><img class="admin-card-thumb" src="${escapeHtml(card.image_path)}" alt=""></button>`
+          ? `<button class="card-thumb-button" type="button" data-preview-image="${escapeHtml(card.image_path)}" data-preview-caption="${escapeHtml(card.title)}" aria-label="查看${escapeHtml(card.title)}图片"><img class="admin-card-thumb" src="${escapeHtml(imagePublicUrl(card.image_path) || card.image_url)}" alt=""></button>`
           : '<div class="admin-card-thumb placeholder" aria-hidden="true">文</div>'}
         <div class="admin-card-copy">
           <strong>${escapeHtml(card.title)}</strong>
@@ -372,7 +395,7 @@
     $('#media-list').innerHTML = state.images.length ? state.images.map((image, index) => `
       <div class="media-item" ${image.id ? `data-media-id="${image.id}"` : ''}>
         <button class="media-preview-button" type="button" data-preview-image="${escapeHtml(image.relative_path)}" data-preview-caption="${escapeHtml(friendlyImageName(image, index))}">
-          <img src="${escapeHtml(image.relative_path)}" alt="">
+          <img src="${escapeHtml(image.public_url || publicUrl(image.relative_path))}" alt="">
           <strong>${escapeHtml(friendlyImageName(image, index))}</strong>
           <span>点击查看大图</span>
         </button>

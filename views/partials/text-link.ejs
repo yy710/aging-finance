@@ -1,6 +1,7 @@
 <%
   const linkData = (typeof item !== 'undefined' && item) || (typeof card !== 'undefined' && card) || {};
   const linkPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
+  const linkPublicUrl = typeof publicUrl === 'function' ? publicUrl : (value) => value;
   const linkUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
   const linkTitle = linkData.title || linkData.name || '';
   const linkTargetId = linkData.target_page_id ?? linkData.targetPageId ?? null;
@@ -12,7 +13,7 @@
     if (linkUrlMap instanceof Map) linkTarget = linkUrlMap.get(linkTargetId) || linkUrlMap.get(String(linkTargetId)) || '';
     else linkTarget = linkUrlMap[linkTargetId] || linkUrlMap[String(linkTargetId)] || '';
   }
-  const linkHref = linkTarget || linkData.external_url || linkData.externalUrl || '#';
+  const linkHref = linkPublicUrl(linkTarget || linkData.external_url || linkData.externalUrl || '#');
   const linkExternal = Boolean(linkData.external_url || linkData.externalUrl || /^https?:\/\//iu.test(linkHref));
   const linkDisabled = linkHref === '#';
 %>

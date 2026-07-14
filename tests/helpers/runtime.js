@@ -8,6 +8,7 @@ const { createApp } = require('../../server/app');
 const { ContentService } = require('../../server/content-service');
 const { openDatabase } = require('../../server/database');
 const { createGenerator } = require('../../server/generator');
+const { createPublicUrl } = require('../../server/public-url');
 
 const REPOSITORY_ROOT = path.resolve(__dirname, '..', '..');
 const TEST_PASSWORD = 'test-admin-password';
@@ -73,6 +74,7 @@ async function createTestRuntime(testContext, options = {}) {
     secureCookies: false,
     sessionTtlMs: 60 * 60 * 1000,
     uploadMaxBytes: 1024 * 1024,
+    publicBasePath: options.publicBasePath || '',
   };
 
   let generationCount = 0;
@@ -83,6 +85,7 @@ async function createTestRuntime(testContext, options = {}) {
     assetsDir: config.assetsDir,
     uploadsDir,
     database: db,
+    publicBasePath: config.publicBasePath,
   });
   const generate = options.realGenerator
     ? async () => {
@@ -95,7 +98,9 @@ async function createTestRuntime(testContext, options = {}) {
           pageCount: service.countPages(),
           cardCount: service.countCards(),
           assetCount: 0,
-          urls: service.listPages({ status: 'published' }).map((page) => page.url),
+          urls: service
+            .listPages({ status: 'published' })
+            .map((page) => createPublicUrl(config.publicBasePath)(page.url)),
           cleanupWarning: null,
         };
       };

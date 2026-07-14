@@ -1,6 +1,6 @@
 <%
   const backgroundPage = (typeof page !== 'undefined' && page) || {};
-  const backgroundAsset = typeof asset === 'function' ? asset : (value) => value;
+  const backgroundPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
   const backgroundTheme = typeof theme === 'string' && theme ? theme : 'hui';
   const topDecorations = {
     home: '/assets/images/decor/home-top.png',
@@ -17,6 +17,6 @@
   const topDecoration = configuredTop || topDecorations[backgroundTheme] || topDecorations.hui;
 %>
 <div class="page-background" aria-hidden="true">
-  <img class="page-background__top" src="<%= backgroundAsset(topDecoration) %>" alt="" width="720" height="300" fetchpriority="high">
+  <img class="page-background__top" src="<%= backgroundPublicUrl(topDecoration) %>" alt="" width="720" height="300" fetchpriority="high">
   <div class="page-background__columns"></div>
 </div>

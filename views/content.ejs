@@ -1,8 +1,8 @@
 <%
   const contentSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
   const contentPage = (typeof page !== 'undefined' && page) || {};
-  const contentAsset = typeof asset === 'function' ? asset : (value) => value;
-  const contentParentUrl = (typeof parentUrl === 'string' && parentUrl) || contentPage.parent_url || (contentPage.parent && contentPage.parent.url) || '/';
+  const contentPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
+  const contentParentUrl = contentPublicUrl((typeof parentUrl === 'string' && parentUrl) || contentPage.parent_url || (contentPage.parent && contentPage.parent.url) || '/');
   const explicitTheme = `${contentPage.theme || contentPage.background_image || ''}`.trim().toLowerCase();
   const themeSource = `${contentPage.decorative_character || ''} ${contentPage.slug || ''} ${contentPage.title || ''}`.toLowerCase();
   let contentTheme = ['hui', 'yi', 'yang', 'le', 'chuan'].includes(explicitTheme) ? explicitTheme : 'hui';
@@ -19,21 +19,21 @@
 %>
 <!doctype html>
 <html lang="zh-CN">
-<%- include('partials/head', { site: contentSite, page: contentPage, asset: contentAsset }) %>
+<%- include('partials/head', { site: contentSite, page: contentPage, publicUrl: contentPublicUrl, publicBasePath: typeof publicBasePath === 'string' ? publicBasePath : '' }) %>
 <body class="public-site template-content theme-<%= contentTheme %>">
   <a class="skip-link" href="#main-content">跳至主要内容</a>
   <div class="page-canvas">
-    <%- include('partials/page-background', { page: contentPage, theme: contentTheme, asset: contentAsset }) %>
-    <%- include('partials/header', { page: contentPage, parentUrl: contentParentUrl, asset: contentAsset }) %>
+    <%- include('partials/page-background', { page: contentPage, theme: contentTheme, publicUrl: contentPublicUrl }) %>
+    <%- include('partials/header', { page: contentPage, parentUrl: contentParentUrl, publicUrl: contentPublicUrl }) %>
     <main class="page-main content-main" id="main-content">
       <article class="content-panel">
-        <% if (contentImage) { %><img class="content-panel__image" src="<%= contentAsset(contentImage) %>" alt="<%= contentPage.image_alt || contentPage.title || '' %>" decoding="async"><% } %>
+        <% if (contentImage) { %><img class="content-panel__image" src="<%= contentPublicUrl(contentImage) %>" alt="<%= contentPage.image_alt || contentPage.title || '' %>" decoding="async"><% } %>
         <% if (suppliedSafeContent) { %><div class="rich-content"><%- suppliedSafeContent %></div><% } %>
         <% if (plainContent) { %><div class="rich-content rich-content--plain"><%= plainContent %></div><% } %>
-        <% if (pdfUrl) { %><p class="content-panel__document"><a href="<%= pdfUrl %>" target="_blank" rel="noopener noreferrer"><%= contentPage.pdf_label || contentPage.title || '查看文档' %></a></p><% } %>
+        <% if (pdfUrl) { %><p class="content-panel__document"><a href="<%= contentPublicUrl(pdfUrl) %>" target="_blank" rel="noopener noreferrer"><%= contentPage.pdf_label || contentPage.title || '查看文档' %></a></p><% } %>
       </article>
     </main>
-    <%- include('partials/footer', { site: contentSite, page: contentPage, theme: contentTheme, asset: contentAsset }) %>
+    <%- include('partials/footer', { site: contentSite, page: contentPage, theme: contentTheme, publicUrl: contentPublicUrl }) %>
   </div>
 </body>
 </html>

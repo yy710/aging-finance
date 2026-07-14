@@ -5,6 +5,12 @@ const fs = require('node:fs');
 const fsp = require('node:fs/promises');
 const path = require('node:path');
 
+const {
+  createPublicUrl,
+  normalizePublicBasePath,
+  stripPublicBasePath,
+} = require('./public-url');
+
 const HASH_LENGTH = 10;
 const CSS_URL_PATTERN = /url\(\s*(['"]?)([^'"\)]+)\1\s*\)/giu;
 
@@ -136,6 +142,7 @@ function sortManifest(manifest) {
 function createAssetHelper(manifest, options = {}) {
   const strict = options.strict !== false;
   const versionKey = options.versionKey || 'v';
+  const publicUrl = options.publicUrl || createPublicUrl(options.publicBasePath || '');
 
   return function asset(reference) {
     if (reference === null || reference === undefined || reference === '') {
@@ -144,7 +151,7 @@ function createAssetHelper(manifest, options = {}) {
 
     const input = String(reference).trim();
     if (!input || isExternalReference(input)) {
-      return input;
+      return publicUrl(input);
     }
 
     const parts = splitUrlReference(input);
@@ -164,7 +171,7 @@ function createAssetHelper(manifest, options = {}) {
     const parameters = new URLSearchParams(parts.query);
     parameters.set(versionKey, hash);
     const query = parameters.toString();
-    return `${encodePublicPath(key)}${query ? `?${query}` : ''}${parts.fragment}`;
+    return publicUrl(`${encodePublicPath(key)}${query ? `?${query}` : ''}${parts.fragment}`);
   };
 }
 
@@ -391,6 +398,7 @@ async function prepareAssets(options) {
     templateData = {},
     hashLength = HASH_LENGTH,
   } = options;
+  const publicBasePath = normalizePublicBasePath(options.publicBasePath || '');
 
   if (!stageDirectory) {
     throw new TypeError('prepareAssets stageDirectory is required');
@@ -420,10 +428,14 @@ async function prepareAssets(options) {
   // This lets both EJS asset() calls and ordinary url(...) references receive
   // the real dependency hash before the resulting CSS file itself is hashed.
   for (const item of cssAssets) {
-    const dependencyAsset = createAssetHelper(manifest, { strict: true });
+    const dependencyAsset = createAssetHelper(manifest, {
+      strict: true,
+      publicBasePath,
+    });
     const rendered = await renderFileWithEngine(ejs, item.sourcePath, {
       ...templateData,
       asset: dependencyAsset,
+      publicUrl: dependencyAsset,
     });
     const rewritten = rewriteCssAssetUrls(
       rendered,
@@ -431,6 +443,7 @@ async function prepareAssets(options) {
       manifest,
       dependencyAsset,
     );
+    assertCssPublicBasePath(rewritten, publicBasePath, item.publicPath);
     const destination = destinationForPublicPath(
       stageDirectory,
       item.publicPath,
@@ -443,7 +456,7 @@ async function prepareAssets(options) {
   const sortedManifest = sortManifest(manifest);
   return {
     manifest: sortedManifest,
-    asset: createAssetHelper(sortedManifest, { strict: true }),
+    asset: createAssetHelper(sortedManifest, { strict: true, publicBasePath }),
     files: discovered,
   };
 }
@@ -458,11 +471,37 @@ async function writeAssetManifest(stageDirectory, manifest) {
   return destination;
 }
 
-function assertVersionedReference(reference, manifest, context) {
+function assertPublicBasePathReference(reference, publicBasePath, context) {
+  const basePath = normalizePublicBasePath(publicBasePath || '');
+  if (!basePath || !reference || isExternalReference(reference)) return;
+  const { pathname } = splitUrlReference(String(reference).replace(/&amp;/gu, '&'));
+  if (!pathname.startsWith('/')) return;
+  if (pathname !== basePath && !pathname.startsWith(`${basePath}/`)) {
+    throw new AssetError(
+      'PUBLIC_BASE_PATH_MISSING',
+      `Rendered output ${context} contains a root-relative URL without ${basePath}: ${pathname}`,
+      { context, publicBasePath: basePath, reference: pathname },
+    );
+  }
+}
+
+function assertCssPublicBasePath(css, publicBasePath, context = 'stylesheet') {
+  for (const match of String(css).matchAll(CSS_URL_PATTERN)) {
+    assertPublicBasePathReference(match[2].trim(), publicBasePath, context);
+  }
+}
+
+function assertVersionedReference(reference, manifest, context, options = {}) {
   if (!reference || isExternalReference(reference)) {
     return;
   }
-  const parts = splitUrlReference(reference.replace(/&amp;/gu, '&'));
+  const publicBasePath = normalizePublicBasePath(options.publicBasePath || '');
+  assertPublicBasePathReference(reference, publicBasePath, context);
+  const internalReference = stripPublicBasePath(
+    reference.replace(/&amp;/gu, '&'),
+    publicBasePath,
+  );
+  const parts = splitUrlReference(internalReference);
   let key;
   try {
     key = normalizeAssetKey(parts.pathname);
@@ -495,17 +534,21 @@ function assertVersionedReference(reference, manifest, context) {
   }
 }
 
-function rewriteHtmlAssetUrls(html, manifest, assetHelper) {
-  const helper = assetHelper || createAssetHelper(manifest, { strict: true });
+function rewriteHtmlAssetUrls(html, manifest, assetHelper, options = {}) {
+  const publicBasePath = normalizePublicBasePath(options.publicBasePath || '');
+  const publicUrl = options.publicUrl || createPublicUrl(publicBasePath);
+  const helper = assetHelper || createAssetHelper(manifest, { strict: true, publicBasePath });
   const rewriteReference = (rawReference) => {
     const reference = String(rawReference || '').replace(/&amp;/giu, '&');
     if (!reference || isExternalReference(reference)) {
       return rawReference;
     }
 
+    const internalReference = stripPublicBasePath(reference, publicBasePath);
+
     let key;
     try {
-      key = normalizeAssetKey(splitUrlReference(reference).pathname);
+      key = normalizeAssetKey(splitUrlReference(internalReference).pathname);
     } catch {
       return rawReference;
     }
@@ -515,10 +558,12 @@ function rewriteHtmlAssetUrls(html, manifest, assetHelper) {
       || key.startsWith('/uploads/')
       || key === '/_assets'
       || key.startsWith('/_assets/');
-    if (!Object.prototype.hasOwnProperty.call(manifest, key) && !isManagedPath) {
-      return rawReference;
+    if (Object.prototype.hasOwnProperty.call(manifest, key) || isManagedPath) {
+      return helper(internalReference);
     }
-    return helper(reference);
+    return splitUrlReference(internalReference).pathname.startsWith('/')
+      ? publicUrl(internalReference)
+      : rawReference;
   };
   const escapeAttribute = (value) => String(value)
     .replace(/&/gu, '&amp;')
@@ -558,11 +603,11 @@ function rewriteHtmlAssetUrls(html, manifest, assetHelper) {
   return rewritten;
 }
 
-function assertVersionedHtmlAssets(html, manifest, context = 'page') {
+function assertVersionedHtmlAssets(html, manifest, context = 'page', options = {}) {
   const source = String(html);
   const attributePattern = /\b(?:href|poster|src)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/giu;
   for (const match of source.matchAll(attributePattern)) {
-    assertVersionedReference(match[1] || match[2] || match[3], manifest, context);
+    assertVersionedReference(match[1] || match[2] || match[3], manifest, context, options);
   }
 
   const srcsetPattern = /\bsrcset\s*=\s*(?:"([^"]*)"|'([^']*)')/giu;
@@ -570,18 +615,20 @@ function assertVersionedHtmlAssets(html, manifest, context = 'page') {
     const candidates = (match[1] || match[2] || '').split(',');
     for (const candidate of candidates) {
       const reference = candidate.trim().split(/\s+/u)[0];
-      assertVersionedReference(reference, manifest, context);
+      assertVersionedReference(reference, manifest, context, options);
     }
   }
 
   for (const match of source.matchAll(CSS_URL_PATTERN)) {
-    assertVersionedReference(match[2].trim(), manifest, context);
+    assertVersionedReference(match[2].trim(), manifest, context, options);
   }
 }
 
 module.exports = {
   AssetError,
   HASH_LENGTH,
+  assertCssPublicBasePath,
+  assertPublicBasePathReference,
   assertVersionedHtmlAssets,
   createAssetHelper,
   discoverAssets,

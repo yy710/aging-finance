@@ -4,9 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
+  <meta name="public-base-path" content="<%= publicBasePath %>">
   <title>养老金融网站管理</title>
-  <link rel="icon" type="image/png" href="/assets/images/home/entry-hui.png">
-  <link rel="stylesheet" href="/admin/styles.css">
+  <link rel="icon" type="image/png" href="<%= publicUrl('/assets/images/home/entry-hui.png') %>">
+  <link rel="stylesheet" href="<%= publicUrl('/admin/styles.css') %>">
 </head>
 <body>
   <section id="login-view" class="login-shell" hidden>
@@ -56,7 +57,7 @@
               <h2 id="page-form-heading">编辑页面</h2>
             </div>
             <div class="inline-actions">
-              <a id="preview-link" class="button button-secondary" href="/" target="_blank" rel="noopener">打开完整页面</a>
+              <a id="preview-link" class="button button-secondary" href="<%= publicUrl('/') %>" target="_blank" rel="noopener">打开完整页面</a>
               <button id="delete-page-button" class="button button-danger" type="button">删除页面</button>
             </div>
           </div>
@@ -228,6 +229,6 @@
     </figure>
   </dialog>
 
-  <script src="/admin/app.js" defer></script>
+  <script src="<%= publicUrl('/admin/app.js') %>" defer></script>
 </body>
 </html>

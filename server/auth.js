@@ -1,7 +1,9 @@
 const crypto = require('node:crypto');
 const express = require('express');
 
-const COOKIE_NAME = 'aging_finance_admin';
+const { cookiePathForBase } = require('./public-url');
+
+const COOKIE_NAME = 'af_admin_session';
 
 function encode(value) {
   return Buffer.from(value, 'utf8').toString('base64url');
@@ -117,7 +119,7 @@ function createAuth(config, options = {}) {
       httpOnly: true,
       sameSite: 'strict',
       secure: config.secureCookies || req.secure,
-      path: '/',
+      path: cookiePathForBase(config.publicBasePath),
       maxAge: config.sessionTtlMs,
     };
   }

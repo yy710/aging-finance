@@ -3,7 +3,9 @@ const path = require('node:path');
 const express = require('express');
 const multer = require('multer');
 
+const { HASH_LENGTH, hashBuffer } = require('./assets');
 const { createUpload, replaceStoredImage, storeNewImage } = require('./media');
+const { createPublicUrl, splitReference } = require('./public-url');
 const { sanitizeContent } = require('./sanitize');
 
 const LIBRARY_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
@@ -25,15 +27,71 @@ function collectImageFiles(directory, urlPrefix, relativeDirectory = '') {
       relative_path: `${urlPrefix}/${relativePath.split(path.sep).map(encodeURIComponent).join('/')}`,
       original_name: entry.name,
       replaceable: false,
+      content_hash: hashBuffer(fs.readFileSync(path.join(currentDirectory, entry.name))),
     });
   }
   return images;
 }
 
-function listImageLibrary(config, uploadedMedia) {
+function versionedPublicUrl(publicUrl, reference, contentHash) {
+  const version = String(contentHash || '').trim().slice(0, HASH_LENGTH);
+  if (!/^[a-f0-9]{8,12}$/iu.test(version)) return publicUrl(reference);
+  const { pathname, query, fragment } = splitReference(reference);
+  const parameters = new URLSearchParams(query.replace(/^\?/u, ''));
+  parameters.set('v', version);
+  return publicUrl(`${pathname}?${parameters}${fragment}`);
+}
+
+function createVersionedFileUrl(config, publicUrl) {
+  const roots = [
+    ['/assets/', path.resolve(config.assetsDir)],
+    ['/uploads/', path.resolve(config.uploadsDir)],
+  ];
+  const cache = new Map();
+
+  return function versionedFileUrl(reference, knownHash = '') {
+    if (!reference) return '';
+    if (knownHash) return versionedPublicUrl(publicUrl, reference, knownHash);
+
+    const { pathname } = splitReference(reference);
+    const root = roots.find(([prefix]) => pathname.startsWith(prefix));
+    if (!root) return publicUrl(reference);
+    const [prefix, directory] = root;
+    let segments;
+    try {
+      segments = pathname.slice(prefix.length).split('/').map(decodeURIComponent);
+    } catch {
+      return publicUrl(reference);
+    }
+    if (!segments.length || segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+      return publicUrl(reference);
+    }
+
+    const filePath = path.resolve(directory, ...segments);
+    if (!filePath.startsWith(`${directory}${path.sep}`)) return publicUrl(reference);
+    try {
+      const stat = fs.statSync(filePath);
+      if (!stat.isFile()) return publicUrl(reference);
+      const cached = cache.get(filePath);
+      const contentHash = cached && cached.size === stat.size && cached.mtimeMs === stat.mtimeMs
+        ? cached.contentHash
+        : hashBuffer(fs.readFileSync(filePath));
+      cache.set(filePath, { contentHash, mtimeMs: stat.mtimeMs, size: stat.size });
+      return versionedPublicUrl(publicUrl, reference, contentHash);
+    } catch {
+      return publicUrl(reference);
+    }
+  };
+}
+
+function listImageLibrary(config, uploadedMedia, publicUrl = (value) => value) {
   const uploadedImages = uploadedMedia.map((media) => ({ ...media, replaceable: true }));
   const publicImages = collectImageFiles(config.assetsDir, '/assets');
   return [...uploadedImages, ...publicImages]
+    .map((image) => ({
+      ...image,
+      public_url: versionedPublicUrl(publicUrl, image.relative_path, image.content_hash),
+    }))
     .sort((a, b) => String(a.original_name).localeCompare(String(b.original_name), 'zh-CN'));
 }
 
@@ -75,11 +133,42 @@ function createApiRouter({ config, service, generate }) {
   }
   const router = express.Router();
   const upload = createUpload(config);
+  const publicUrl = createPublicUrl(config.publicBasePath);
+  const publicImageUrl = createVersionedFileUrl(config, publicUrl);
+  const presentPage = (page) => page && ({
+    ...page,
+    url: publicUrl(page.url),
+    previous_url: page.previous_url ? publicUrl(page.previous_url) : page.previous_url,
+    title_image_url: page.title_image ? publicImageUrl(page.title_image) : '',
+    background_image_url: String(page.background_image || '').startsWith('/')
+      ? publicImageUrl(page.background_image)
+      : '',
+  });
+  const presentPageTree = (node) => node && ({
+    ...presentPage(node),
+    children: Array.isArray(node.children) ? node.children.map(presentPageTree) : node.children,
+  });
+  const presentCard = (card) => card && ({
+    ...card,
+    image_url: card.image_path ? publicImageUrl(card.image_path) : '',
+    resolved_url: card.resolved_url && !card.is_external
+      ? publicUrl(card.resolved_url)
+      : card.resolved_url,
+  });
+  const presentMedia = (media) => media && ({
+    ...media,
+    public_url: publicImageUrl(media.relative_path, media.content_hash),
+  });
+  const presentSettings = (settings) => settings && ({
+    ...settings,
+    logo_url: settings.logo_path ? publicImageUrl(settings.logo_path) : '',
+    public_base_path: config.publicBasePath || '',
+  });
 
   router.use(express.json({ limit: '1mb' }));
 
-  async function mutateAndPublish(res, operation, { status = 200, key } = {}) {
-    const value = operation();
+  async function mutateAndPublish(res, operation, { status = 200, key, present = (value) => value } = {}) {
+    const value = present(operation());
     try {
       const publication = await generate();
       const body = key ? { [key]: value } : { result: value };
@@ -94,23 +183,25 @@ function createApiRouter({ config, service, generate }) {
   }
 
   router.get('/settings', (_req, res) => {
-    res.json({ settings: service.getSiteSettings() });
+    res.json({ settings: presentSettings(service.getSiteSettings()) });
   });
 
   router.put('/settings', asyncRoute(async (req, res) => {
-    return mutateAndPublish(res, () => service.updateSiteSettings(req.body), { key: 'settings' });
+    return mutateAndPublish(res, () => service.updateSiteSettings(req.body), {
+      key: 'settings', present: presentSettings,
+    });
   }));
 
   router.get('/pages', (_req, res) => {
-    res.json({ pages: service.listPages() });
+    res.json({ pages: service.listPages().map(presentPage) });
   });
 
   router.get('/pages/tree', (_req, res) => {
-    res.json({ tree: service.getPageTree() });
+    res.json({ tree: service.getPageTree().map(presentPageTree) });
   });
 
   router.get('/pages/:id', (req, res) => {
-    res.json({ page: service.getPage(req.params.id) });
+    res.json({ page: presentPage(service.getPage(req.params.id)) });
   });
 
   router.post('/pages', asyncRoute(async (req, res) => {
@@ -118,7 +209,9 @@ function createApiRouter({ config, service, generate }) {
       ...req.body,
       content: sanitizeContent(req.body?.content),
     };
-    return mutateAndPublish(res, () => service.createPage(payload), { status: 201, key: 'page' });
+    return mutateAndPublish(res, () => service.createPage(payload), {
+      status: 201, key: 'page', present: presentPage,
+    });
   }));
 
   router.put('/pages/:id', asyncRoute(async (req, res) => {
@@ -126,44 +219,57 @@ function createApiRouter({ config, service, generate }) {
     if (Object.prototype.hasOwnProperty.call(payload, 'content')) {
       payload.content = sanitizeContent(payload.content);
     }
-    return mutateAndPublish(res, () => service.updatePage(req.params.id, payload), { key: 'page' });
+    return mutateAndPublish(res, () => service.updatePage(req.params.id, payload), {
+      key: 'page', present: presentPage,
+    });
   }));
 
   router.delete('/pages/:id', asyncRoute(async (req, res) => {
-    return mutateAndPublish(res, () => service.deletePage(req.params.id), { key: 'page' });
+    return mutateAndPublish(res, () => service.deletePage(req.params.id), {
+      key: 'page', present: presentPage,
+    });
   }));
 
   router.get('/pages/:id/cards', (req, res) => {
-    res.json({ cards: service.listCards(req.params.id) });
+    res.json({ cards: service.listCards(req.params.id).map(presentCard) });
   });
 
   router.get('/cards/:id', (req, res) => {
-    res.json({ card: service.getCard(req.params.id) });
+    res.json({ card: presentCard(service.getCard(req.params.id)) });
   });
 
   router.post('/cards', asyncRoute(async (req, res) => {
-    return mutateAndPublish(res, () => service.createCard(req.body), { status: 201, key: 'card' });
+    return mutateAndPublish(res, () => service.createCard(req.body), {
+      status: 201, key: 'card', present: presentCard,
+    });
   }));
 
   router.put('/cards/:id', asyncRoute(async (req, res) => {
-    return mutateAndPublish(res, () => service.updateCard(req.params.id, req.body), { key: 'card' });
+    return mutateAndPublish(res, () => service.updateCard(req.params.id, req.body), {
+      key: 'card', present: presentCard,
+    });
   }));
 
   router.delete('/cards/:id', asyncRoute(async (req, res) => {
-    return mutateAndPublish(res, () => service.deleteCard(req.params.id), { key: 'card' });
+    return mutateAndPublish(res, () => service.deleteCard(req.params.id), {
+      key: 'card', present: presentCard,
+    });
   }));
 
   router.post('/cards/:id/move', asyncRoute(async (req, res) => {
     return mutateAndPublish(
       res,
       () => service.moveCard(req.params.id, req.body?.direction),
-      { key: 'card' },
+      { key: 'card', present: presentCard },
     );
   }));
 
   router.get('/media', (_req, res) => {
     const media = service.listMedia();
-    res.json({ media, images: listImageLibrary(config, media) });
+    res.json({
+      media: media.map(presentMedia),
+      images: listImageLibrary(config, media, publicUrl),
+    });
   });
 
   router.post('/media', upload.single('image'), asyncRoute(async (req, res) => {
@@ -184,11 +290,14 @@ function createApiRouter({ config, service, generate }) {
     }
     try {
       const publication = await generate();
-      return res.status(201).json({ media, publication: publicationDetails(publication) });
+      return res.status(201).json({
+        media: presentMedia(media),
+        publication: publicationDetails(publication),
+      });
     } catch (error) {
       throw markPublicationFailure(error, {
         key: 'media',
-        value: media,
+        value: presentMedia(media),
         message: '图片已安全保存，但静态网站生成失败；当前已发布版本未受影响。',
       });
     }
@@ -213,11 +322,11 @@ function createApiRouter({ config, service, generate }) {
     }
     try {
       const publication = await generate();
-      return res.json({ media, publication: publicationDetails(publication) });
+      return res.json({ media: presentMedia(media), publication: publicationDetails(publication) });
     } catch (error) {
       throw markPublicationFailure(error, {
         key: 'media',
-        value: media,
+        value: presentMedia(media),
         message: '图片记录已更新，但静态网站生成失败；当前已发布版本仍在使用上一次资源快照。',
       });
     }
@@ -260,8 +369,10 @@ module.exports = {
   apiErrorHandler,
   asyncRoute,
   collectImageFiles,
+  createVersionedFileUrl,
   createApiRouter,
   listImageLibrary,
   markPublicationFailure,
   publicationDetails,
+  versionedPublicUrl,
 };

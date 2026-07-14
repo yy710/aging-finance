@@ -7,10 +7,18 @@ const path = require('node:path');
 const {
   assertVersionedHtmlAssets,
   createAssetHelper,
+  normalizeAssetKey,
   prepareAssets,
   rewriteHtmlAssetUrls,
+  splitUrlReference,
   writeAssetManifest,
 } = require('./assets');
+const {
+  createPageUrl,
+  createPublicUrl,
+  normalizePublicBasePath,
+  stripPublicBasePath,
+} = require('./public-url');
 const { buildSiteTree, getPageById } = require('./site-tree');
 const { sanitizeContent } = require('./sanitize');
 
@@ -628,6 +636,9 @@ async function removeStage(stageDirectory) {
 
 async function generateSiteOnce(options = {}) {
   const projectRoot = path.resolve(options.projectRoot || process.cwd());
+  const publicBasePath = normalizePublicBasePath(
+    options.publicBasePath ?? process.env.PUBLIC_BASE_PATH ?? '',
+  );
   const viewsDirectory = path.resolve(
     projectRoot,
     options.viewsDir || 'views',
@@ -686,34 +697,46 @@ async function generateSiteOnce(options = {}) {
       roots: assetRoots,
       stageDirectory,
       ejs: engine,
+      publicBasePath,
       templateData: {
+        publicBasePath,
         settings: snapshot.settings,
         site: snapshot.settings,
       },
     });
     const asset = createAssetHelper(preparedAssets.manifest, {
+      publicBasePath,
       strict: options.strictAssets !== false,
     });
+    const prefixPublicUrl = createPublicUrl(publicBasePath);
+    const publicUrl = (reference) => {
+      const internalReference = stripPublicBasePath(reference, publicBasePath);
+      let key = '';
+      try {
+        key = normalizeAssetKey(splitUrlReference(internalReference).pathname);
+      } catch {
+        return prefixPublicUrl(reference);
+      }
+      const isManagedAsset = key === '/assets'
+        || key.startsWith('/assets/')
+        || key === '/uploads'
+        || key.startsWith('/uploads/');
+      return isManagedAsset ? asset(internalReference) : prefixPublicUrl(reference);
+    };
     await writeAssetManifest(stageDirectory, preparedAssets.manifest);
 
-    const urlForPage = (pageOrId) => {
-      const page =
-        pageOrId && typeof pageOrId === 'object'
-          ? pageOrId
-          : getPageById(tree, pageOrId);
-      if (!page || !page.url) {
-        throw new GeneratorError(
-          'PAGE_URL_NOT_FOUND',
-          `Cannot resolve URL for page ${String(pageOrId)}`,
-        );
-      }
-      return page.url;
-    };
+    const pageUrl = createPageUrl(
+      publicBasePath,
+      (pageId) => getPageById(tree, pageId),
+    );
+    const urlForPage = pageUrl;
 
     for (const page of tree.pages) {
       const templatePath = templates[page.template_type];
       const helpers = {
         asset,
+        pageUrl,
+        publicUrl,
         resolveAsset: asset,
         urlForPage,
       };
@@ -721,6 +744,7 @@ async function generateSiteOnce(options = {}) {
         sanitizeContent(page.content || ''),
         preparedAssets.manifest,
         asset,
+        { publicBasePath, publicUrl },
       );
       const html = await renderEjsFile(engine, templatePath, {
         asset,
@@ -728,8 +752,12 @@ async function generateSiteOnce(options = {}) {
         children: page.children,
         helpers,
         page,
+        pageUrl,
         pages: tree.pages,
         parent: page.parent,
+        parentUrl: page.parent ? pageUrl(page.parent) : publicUrl('/'),
+        publicBasePath,
+        publicUrl,
         root: tree.root,
         settings: snapshot.settings,
         safeContent,
@@ -737,7 +765,12 @@ async function generateSiteOnce(options = {}) {
         tree,
         urlForPage,
       });
-      assertVersionedHtmlAssets(html, preparedAssets.manifest, page.url);
+      assertVersionedHtmlAssets(
+        html,
+        preparedAssets.manifest,
+        pageUrl(page),
+        { publicBasePath },
+      );
 
       const destination = safeStageDestination(
         stageDirectory,
@@ -757,7 +790,8 @@ async function generateSiteOnce(options = {}) {
       cardCount: tree.cards.length,
       assetCount: Object.keys(preparedAssets.manifest).length,
       manifest: preparedAssets.manifest,
-      urls: tree.pages.map((page) => page.url),
+      publicBasePath,
+      urls: tree.pages.map((page) => pageUrl(page)),
       cleanupWarning: publication.cleanupWarning,
     };
   } catch (error) {

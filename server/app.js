@@ -1,9 +1,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const ejs = require('ejs');
 const express = require('express');
 
 const { createApiRouter, apiErrorHandler } = require('./api');
 const { createAuth } = require('./auth');
+const { createPublicUrl } = require('./public-url');
 
 const VERSION_PATTERN = /^[a-f0-9]{8,12}$/i;
 
@@ -50,6 +52,44 @@ function rejectUnsafeGeneratedAssetPath(req, res, next) {
   return next();
 }
 
+function createGeneratedDirectoryRedirect(config, publicUrl) {
+  const generatedRoot = `${path.resolve(config.generatedDir)}${path.sep}`;
+
+  return (req, res, next) => {
+    if (!['GET', 'HEAD'].includes(req.method) || req.path.endsWith('/')) {
+      return next();
+    }
+
+    const requestPath = String(req.path || '');
+    let decodedPath;
+    try {
+      decodedPath = decodeURIComponent(requestPath).replace(/\\/gu, '/');
+    } catch {
+      return next();
+    }
+
+    const segments = decodedPath.split('/');
+    if (segments.includes('..') || segments.includes('.')) {
+      return next();
+    }
+
+    const relativePath = decodedPath.replace(/^\/+|\/+$/gu, '');
+    if (!relativePath) {
+      return next();
+    }
+
+    const indexPath = path.resolve(config.generatedDir, relativePath, 'index.html');
+    if (!indexPath.startsWith(generatedRoot) || !fs.existsSync(indexPath)) {
+      return next();
+    }
+
+    const queryIndex = String(req.originalUrl || '').indexOf('?');
+    const query = queryIndex >= 0 ? String(req.originalUrl).slice(queryIndex) : '';
+    res.set('Cache-Control', 'no-cache');
+    return res.redirect(301, `${publicUrl(`${requestPath}/`)}${query}`);
+  };
+}
+
 function securityHeaders(config) {
   return (req, res, next) => {
     res.set({
@@ -83,6 +123,7 @@ function createApp({ config, service, generate, authOptions } = {}) {
   }
 
   const app = express();
+  const publicUrl = createPublicUrl(config.publicBasePath);
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
   app.use(securityHeaders(config));
@@ -109,15 +150,23 @@ function createApp({ config, service, generate, authOptions } = {}) {
   app.use('/api', noStore, (_req, res) => res.status(404).json({ error: '管理 API 不存在。' }));
   app.use('/api', apiErrorHandler);
 
-  app.get(/^\/admin$/, noStore, (_req, res) => res.redirect(301, '/admin/'));
-  app.use('/admin', noStore, express.static(config.adminDir, {
-    dotfiles: 'deny',
-    etag: false,
-    fallthrough: true,
-    index: 'index.html',
-    lastModified: false,
-    redirect: false,
-  }));
+  app.get(/^\/admin$/, noStore, (_req, res) => res.redirect(301, publicUrl('/admin/')));
+  app.get('/admin/', noStore, async (req, res, next) => {
+    try {
+      const html = await ejs.renderFile(path.join(config.adminDir, 'index.ejs'), {
+        publicBasePath: config.publicBasePath || '',
+        publicUrl,
+      });
+      res.type('html').send(html);
+    } catch (error) {
+      next(error);
+    }
+  });
+  for (const filename of ['app.js', 'styles.css']) {
+    app.get(`/admin/${filename}`, noStore, (_req, res) => {
+      res.sendFile(path.join(config.adminDir, filename), { dotfiles: 'deny' });
+    });
+  }
   app.use('/admin', noStore, (_req, res) => res.status(404).send('管理页面不存在。'));
 
   const generatedStaticOptions = {
@@ -139,6 +188,7 @@ function createApp({ config, service, generate, authOptions } = {}) {
     app.use(mountPath, noCache, (_req, res) => res.status(404).send('资源不存在。'));
   }
 
+  app.use(createGeneratedDirectoryRedirect(config, publicUrl));
   app.use(noCache);
   app.use(allowSameOriginPreview);
   app.use(express.static(config.generatedDir, {
@@ -147,12 +197,12 @@ function createApp({ config, service, generate, authOptions } = {}) {
     fallthrough: true,
     index: 'index.html',
     lastModified: true,
-    redirect: true,
+    redirect: false,
   }));
 
   app.use((req, res) => {
     res.status(404).type('html').send(
-      '<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>页面不存在</title><body><main><h1>页面不存在</h1><p><a href="/">返回首页</a></p></main></body></html>',
+      `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>页面不存在</title><body><main><h1>页面不存在</h1><p><a href="${publicUrl('/')}">返回首页</a></p></main></body></html>`,
     );
   });
 
@@ -164,6 +214,7 @@ module.exports = {
   VERSION_PATTERN,
   allowSameOriginPreview,
   createApp,
+  createGeneratedDirectoryRedirect,
   noCache,
   noStore,
   publicCacheHeaders,

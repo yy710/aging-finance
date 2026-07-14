@@ -1,7 +1,7 @@
 <%
-  const backAsset = typeof asset === 'function' ? asset : (value) => value;
-  const backHref = (typeof parentUrl === 'string' && parentUrl) || '/';
+  const backPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
+  const backHref = backPublicUrl((typeof parentUrl === 'string' && parentUrl) || '/');
 %>
 <a class="back-button" href="<%= backHref %>" data-back-button data-parent-url="<%= backHref %>" aria-label="返回上一级页面">
-  <img src="<%= backAsset('/assets/images/global/back.png') %>" alt="" width="92" height="93">
+  <img src="<%= backPublicUrl('/assets/images/global/back.png') %>" alt="" width="92" height="93">
 </a>

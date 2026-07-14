@@ -1,7 +1,7 @@
 const path = require('node:path');
 
 // 部署时将 APP_ROOT 设置为项目的绝对路径，或直接替换下面的示例路径。
-const appRoot = process.env.APP_ROOT || '/www/wwwroot/yl.example.com';
+const appRoot = process.env.APP_ROOT || '/www/wwwroot/www.all2key.cn/aging-finance';
 
 module.exports = {
   apps: [
@@ -21,6 +21,7 @@ module.exports = {
         NODE_ENV: 'production',
         HOST: '127.0.0.1',
         PORT: '3100',
+        PUBLIC_BASE_PATH: '/af',
         COOKIE_SECURE: 'true',
       },
       error_file: path.join(appRoot, 'logs', 'pm2-error.log'),

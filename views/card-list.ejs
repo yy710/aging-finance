@@ -1,10 +1,10 @@
 <%
   const listSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
   const listPage = (typeof page !== 'undefined' && page) || {};
-  const listAsset = typeof asset === 'function' ? asset : (value) => value;
+  const listPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
   const listPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
   const listUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
-  const listParentUrl = (typeof parentUrl === 'string' && parentUrl) || listPage.parent_url || (listPage.parent && listPage.parent.url) || '/';
+  const listParentUrl = listPublicUrl((typeof parentUrl === 'string' && parentUrl) || listPage.parent_url || (listPage.parent && listPage.parent.url) || '/');
   const suppliedCards = typeof cards !== 'undefined' && Array.isArray(cards) ? cards : (Array.isArray(listPage.cards) ? listPage.cards : []);
   const listItems = suppliedCards;
   const explicitTheme = `${listPage.theme || listPage.background_image || ''}`.trim().toLowerCase();
@@ -21,24 +21,24 @@
 %>
 <!doctype html>
 <html lang="zh-CN">
-<%- include('partials/head', { site: listSite, page: listPage, asset: listAsset }) %>
+<%- include('partials/head', { site: listSite, page: listPage, publicUrl: listPublicUrl, publicBasePath: typeof publicBasePath === 'string' ? publicBasePath : '' }) %>
 <body class="public-site template-card-list theme-<%= listTheme %> page--<%= pageKind %>">
   <a class="skip-link" href="#main-content">跳至主要内容</a>
   <div class="page-canvas">
-    <%- include('partials/page-background', { page: listPage, theme: listTheme, asset: listAsset }) %>
-    <%- include('partials/header', { page: listPage, parentUrl: listParentUrl, asset: listAsset }) %>
+    <%- include('partials/page-background', { page: listPage, theme: listTheme, publicUrl: listPublicUrl }) %>
+    <%- include('partials/header', { page: listPage, parentUrl: listParentUrl, publicUrl: listPublicUrl }) %>
     <main class="page-main" id="main-content">
       <section class="card-list card-list--<%= classroomLayout ? 'classroom' : 'standard' %>" aria-label="<%= listPage.title || '链接列表' %>">
         <% listItems.forEach((card) => { %>
           <% if (card.item_type === 'text_link') { %>
-            <ul class="text-link-list text-link-list--embedded"><%- include('partials/text-link', { item: card, pageUrl: listPageUrl, urlMap: listUrlMap }) %></ul>
+            <ul class="text-link-list text-link-list--embedded"><%- include('partials/text-link', { item: card, pageUrl: listPageUrl, publicUrl: listPublicUrl, urlMap: listUrlMap }) %></ul>
           <% } else { %>
-            <%- include('partials/card', { card, asset: listAsset, pageUrl: listPageUrl, urlMap: listUrlMap, layout: classroomLayout ? 'classroom' : 'standard' }) %>
+            <%- include('partials/card', { card, publicUrl: listPublicUrl, pageUrl: listPageUrl, urlMap: listUrlMap, layout: classroomLayout ? 'classroom' : 'standard' }) %>
           <% } %>
         <% }); %>
       </section>
     </main>
-    <%- include('partials/footer', { site: listSite, page: listPage, theme: listTheme, asset: listAsset }) %>
+    <%- include('partials/footer', { site: listSite, page: listPage, theme: listTheme, publicUrl: listPublicUrl }) %>
   </div>
 </body>
 </html>

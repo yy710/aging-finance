@@ -1,7 +1,7 @@
 <%
   const headSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
   const headPage = (typeof page !== 'undefined' && page) || {};
-  const headAsset = typeof asset === 'function' ? asset : (value) => value;
+  const headPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
   const siteName = headSite.site_name || headSite.name || headSite.website_name || '工银养老金融';
   const pageName = headPage.title || '';
   const documentTitle = pageName && pageName !== siteName ? `${pageName} - ${siteName}` : siteName;
@@ -12,9 +12,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="format-detection" content="telephone=no">
   <meta name="theme-color" content="#f2dcbf">
+  <meta name="public-base-path" content="<%= typeof publicBasePath === 'string' ? publicBasePath : '' %>">
   <meta name="description" content="<%= description %>">
   <title><%= documentTitle %></title>
-  <link rel="icon" type="image/png" href="<%= headAsset('/assets/images/home/entry-hui.png') %>">
-  <link rel="stylesheet" href="<%= headAsset('/assets/css/site.css') %>">
-  <script src="<%= headAsset('/assets/js/site.js') %>" defer></script>
+  <link rel="icon" type="image/png" href="<%= headPublicUrl('/assets/images/home/entry-hui.png') %>">
+  <link rel="stylesheet" href="<%= headPublicUrl('/assets/css/site.css') %>">
+  <script src="<%= headPublicUrl('/assets/js/site.js') %>" defer></script>
 </head>
