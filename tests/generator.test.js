@@ -100,6 +100,7 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   const logoKey = '/assets/images/home/logo.png';
   const cssKey = '/assets/css/site.css';
   const middleKey = '/assets/images/decor/hui-middle.png';
+  const homeBottomKey = '/assets/images/decor/home-bottom.png';
   const scriptKey = '/assets/js/site.js';
   const firstHome = await fs.readFile(path.join(outputDir, 'index.html'), 'utf8');
   assert.match(
@@ -110,6 +111,12 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
     firstHome,
     new RegExp(`/assets/images/home/logo\\.png\\?v=${first.manifest[logoKey]}`),
   );
+  assert.match(
+    firstHome,
+    new RegExp(`/assets/images/decor/home-bottom\\.png\\?v=${first.manifest[homeBottomKey]}`),
+  );
+  assert.match(firstHome, /class="page-background__bottom"[^>]+width="720" height="504"/u);
+  assert.doesNotMatch(firstHome, /site-footer__scene/u);
 
   const compiledCssPath = path.join(outputDir, 'assets', 'css', 'site.css');
   const compiledCss = await fs.readFile(compiledCssPath);

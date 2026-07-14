@@ -11,6 +11,7 @@
   --surface-warm: #fcfbfa;
   --focus: #9f181f;
   --middle-texture: url("<%= publicUrl('/assets/images/decor/hui-middle.png') %>");
+  --footer-scene-height: min(55.4167vw, 399px);
 }
 
 * {
@@ -95,12 +96,35 @@ img {
     );
 }
 
-.theme-home { --middle-texture: url("<%= publicUrl('/assets/images/decor/home-middle.png') %>"); }
-.theme-hui { --middle-texture: url("<%= publicUrl('/assets/images/decor/hui-middle.png') %>"); }
-.theme-yi { --middle-texture: url("<%= publicUrl('/assets/images/decor/yi-middle.png') %>"); }
-.theme-yang { --middle-texture: url("<%= publicUrl('/assets/images/decor/yang-middle.png') %>"); }
-.theme-le { --middle-texture: url("<%= publicUrl('/assets/images/decor/le-middle.png') %>"); }
-.theme-chuan { --middle-texture: url("<%= publicUrl('/assets/images/decor/chuan-middle.png') %>"); }
+.theme-home {
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/home-middle.png') %>");
+  --footer-scene-height: min(52.5vw, 378px);
+}
+
+.theme-hui {
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/hui-middle.png') %>");
+  --footer-scene-height: min(55.4167vw, 399px);
+}
+
+.theme-yi {
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/yi-middle.png') %>");
+  --footer-scene-height: min(54.1667vw, 390px);
+}
+
+.theme-yang {
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/yang-middle.png') %>");
+  --footer-scene-height: min(42.6389vw, 307px);
+}
+
+.theme-le {
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/le-middle.png') %>");
+  --footer-scene-height: min(56.9444vw, 410px);
+}
+
+.theme-chuan {
+  --middle-texture: url("<%= publicUrl('/assets/images/decor/chuan-middle.png') %>");
+  --footer-scene-height: min(44.4444vw, 320px);
+}
 
 .page-background {
   position: absolute;
@@ -120,15 +144,24 @@ img {
 
 .page-background__columns {
   position: absolute;
-  top: min(41.6667vw, 300px);
+  top: min(66.6667vw, 480px);
   right: 0;
-  bottom: 0;
+  bottom: min(70vw, 504px);
   left: 0;
   background-image: var(--middle-texture);
   background-repeat: repeat-y;
   background-position: center top;
   background-size: 100% auto;
-  opacity: 0.36;
+}
+
+.page-background__bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 .page-header,
@@ -520,13 +553,8 @@ img {
 
 .site-footer {
   width: 100%;
+  min-height: var(--footer-scene-height);
   line-height: 0;
-}
-
-.site-footer__scene {
-  display: block;
-  width: 100%;
-  height: auto;
 }
 
 .site-footer__copyright {
