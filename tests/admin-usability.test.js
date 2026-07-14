@@ -27,6 +27,12 @@ test('admin exposes friendly labels, a complete image library, and same-origin p
   assert.doesNotMatch(visibleText, /配置文件|私有配置|内容哈希|静态路径/u);
   assert.match(visibleText, /页面预览/u);
   assert.match(visibleText, /图片库/u);
+  assert.match(visibleText, /页面模板/u);
+  assert.doesNotMatch(visibleText, /页面展示方式/u);
+  assert.match(
+    admin.text,
+    /id="page-content-field"[^>]+data-hidden-for-templates="home card-list"/u,
+  );
 
   const publicPage = await request(runtime.app).get('/').expect(200);
   assert.equal(publicPage.headers['x-frame-options'], 'SAMEORIGIN');

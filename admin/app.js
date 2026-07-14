@@ -27,7 +27,11 @@
   const cardForm = $('#card-form');
   const contentEditor = $('#page-content-editor');
   const contentValue = $('#page-content-value');
+  const contentField = $('#page-content-field');
   const publicBasePath = $('meta[name="public-base-path"]')?.content || '';
+  const pageTemplatesWithoutBody = new Set(
+    String(contentField?.dataset.hiddenForTemplates || '').split(/\s+/u).filter(Boolean),
+  );
 
   function publicUrl(reference = '/') {
     if (reference === null || reference === undefined || reference === '') return '';
@@ -47,7 +51,7 @@
     return String(message || '操作失败，请稍后重试。')
       .replace(/\bCard\b/giu, '页面入口')
       .replace(/\bslug\b/giu, '页面地址')
-      .replace(/\btemplate\b/giu, '页面展示方式')
+      .replace(/\btemplate\b/giu, '页面模板')
       .replace(/\bURL\b/gu, '网站地址')
       .replace(/\bHTML\b/gu, '网页内容')
       .replace(/private configuration/giu, '系统设置');
@@ -272,12 +276,17 @@
   }
 
   function formPageSnapshot() {
+    const hasPageBody = !pageTemplatesWithoutBody.has(pageForm.elements.template_type.value);
     return {
       title: pageForm.elements.title.value || '未命名页面',
       title_image: pageForm.elements.title_image.value,
-      contentText: contentEditor.innerText.trim(),
+      contentText: hasPageBody ? contentEditor.innerText.trim() : '',
       status: pageForm.elements.status.value,
     };
+  }
+
+  function syncPageTemplateFields() {
+    contentField.hidden = pageTemplatesWithoutBody.has(pageForm.elements.template_type.value);
   }
 
   function showLocalPagePreview(page = formPageSnapshot(), note = '正在预览尚未发布的内容') {
@@ -339,6 +348,7 @@
     pageForm.elements.template_type.disabled = page?.template_type === 'home';
     pageForm.elements.status.disabled = page?.template_type === 'home';
     $('#cards-panel').hidden = !page;
+    syncPageTemplateFields();
     renderPageOptions(values.parent_id);
     renderImageSelectors();
     updatePagePreview(page);
@@ -504,6 +514,7 @@
 
   pageForm.addEventListener('change', () => {
     state.pageDirty = true;
+    syncPageTemplateFields();
     updateImageThumb('page-title-image');
     updatePagePreview(state.pages.find((item) => item.id === state.selectedPageId), { forceLocal: true });
   });

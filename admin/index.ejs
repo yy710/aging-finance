@@ -88,8 +88,8 @@
               <select id="page-parent" name="parent_id"></select>
             </label>
             <label class="field">
-              <span>页面展示方式</span>
-              <select name="template_type" required>
+              <span>页面模板</span>
+              <select id="page-template" name="template_type" required>
                 <option value="home">网站首页</option>
                 <option value="card-list">图片入口列表</option>
                 <option value="content">正文内容页</option>
@@ -117,7 +117,7 @@
               <span>页面背景</span>
               <select id="page-background" name="background_image"></select>
             </label>
-            <div class="field field-wide">
+            <div id="page-content-field" class="field field-wide" data-hidden-for-templates="home card-list">
               <span>页面正文</span>
               <input id="page-content-value" name="content" type="hidden">
               <div id="page-content-editor" class="content-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="在这里输入页面正文"></div>
