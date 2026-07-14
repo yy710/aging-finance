@@ -1,0 +1,14 @@
+<%
+  const headerPage = (typeof page !== 'undefined' && page) || {};
+  const headerAsset = typeof asset === 'function' ? asset : (value) => value;
+  const headerParentUrl = (typeof parentUrl === 'string' && parentUrl) || headerPage.parent_url || (headerPage.parent && headerPage.parent.url) || '/';
+  const headerTitle = String(headerPage.title || '');
+  const titleImage = headerPage.title_image || headerPage.titleImage || headerPage.heading_image || '';
+  if (!titleImage) throw new Error(`页面“${headerTitle}”缺少预渲染标题图片`);
+%>
+<header class="page-header">
+  <%- include('back-button', { asset: headerAsset, parentUrl: headerParentUrl }) %>
+  <h1 class="page-heading page-heading--image">
+    <img src="<%= headerAsset(titleImage) %>" alt="<%= headerTitle %>" decoding="async">
+  </h1>
+</header>

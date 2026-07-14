@@ -1,0 +1,88 @@
+<%
+  const homeSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
+  const homePage = (typeof page !== 'undefined' && page) || {};
+  const homeAsset = typeof asset === 'function' ? asset : (value) => value;
+  const homePageUrl = typeof pageUrl === 'function' ? pageUrl : null;
+  const homeUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
+  const hasChildrenSource = typeof children !== 'undefined' || Array.isArray(homePage.children);
+  const suppliedChildren = typeof children !== 'undefined' && Array.isArray(children) ? children : (Array.isArray(homePage.children) ? homePage.children : []);
+  const fallbackEntries = [
+    { title: '惠', slug: 'hui', url: '/hui/' },
+    { title: '医', slug: 'yi', url: '/yi/' },
+    { title: '养', slug: 'yang', url: '/yang/' },
+    { title: '乐', slug: 'le', url: '/le/' },
+    { title: '传', slug: 'chuan', url: '/chuan/' },
+  ];
+  const homeEntries = hasChildrenSource ? suppliedChildren : fallbackEntries;
+  const entryImages = {
+    hui: '/assets/images/home/entry-hui.png',
+    yi: '/assets/images/home/entry-yi.png',
+    yang: '/assets/images/home/entry-yang.png',
+    le: '/assets/images/home/entry-le.png',
+    chuan: '/assets/images/home/entry-chuan.png',
+  };
+  function entryTheme(entry) {
+    const marker = String(entry.decorative_character || entry.title || '').trim();
+    if (marker.includes('惠')) return 'hui';
+    if (marker.includes('医')) return 'yi';
+    if (marker.includes('养')) return 'yang';
+    if (marker.includes('乐')) return 'le';
+    if (marker.includes('传')) return 'chuan';
+    const slug = String(entry.slug || '').toLowerCase();
+    if (/(^|[-_/])hui($|[-_/])/u.test(slug)) return 'hui';
+    if (/(^|[-_/])yi($|[-_/])/u.test(slug)) return 'yi';
+    if (/(^|[-_/])yang($|[-_/])/u.test(slug)) return 'yang';
+    if (/(^|[-_/])le($|[-_/])/u.test(slug)) return 'le';
+    if (/(^|[-_/])chuan($|[-_/])/u.test(slug)) return 'chuan';
+    return '';
+  }
+  function entryHref(entry) {
+    if (entry.url || entry.target_url || entry.external_url) return entry.url || entry.target_url || entry.external_url;
+    const id = entry.id ?? entry.target_page_id ?? null;
+    if (id !== null && homePageUrl) {
+      try { return homePageUrl(id) || '#'; } catch (_) { return '#'; }
+    }
+    if (id !== null && homeUrlMap) {
+      if (homeUrlMap instanceof Map) return homeUrlMap.get(id) || homeUrlMap.get(String(id)) || '#';
+      return homeUrlMap[id] || homeUrlMap[String(id)] || '#';
+    }
+    return '#';
+  }
+  const homeLogo = homeSite.logo_path || homeSite.logo || '/assets/images/home/logo.png';
+  const homeTitleImage = homePage.title_image || homeSite.home_title_image || '/assets/images/home/main-title.png';
+  const homeBanner = homeSite.ecosystem_banner_image || '/assets/images/home/ecosystem-banner.png';
+  const homeTagline = homeSite.home_subtitle_image || '/assets/images/home/tagline.png';
+  const siteName = homeSite.site_name || homeSite.name || '工银养老金融';
+%>
+<!doctype html>
+<html lang="zh-CN">
+<%- include('partials/head', { site: homeSite, page: homePage, asset: homeAsset }) %>
+<body class="public-site template-home theme-home">
+  <a class="skip-link" href="#main-content">跳至主要内容</a>
+  <div class="page-canvas page-canvas--home">
+    <%- include('partials/page-background', { page: homePage, theme: 'home', asset: homeAsset }) %>
+    <main class="home-main" id="main-content">
+      <section class="home-hero" aria-labelledby="home-heading">
+        <img class="home-hero__logo" src="<%= homeAsset(homeLogo) %>" alt="<%= siteName %>" width="476" height="65" fetchpriority="high">
+        <h1 class="home-hero__heading" id="home-heading">
+          <img src="<%= homeAsset(homeTitleImage) %>" alt="<%= homeSite.home_title || '如意人生 养老金融全面解决方案' %>" width="588" height="177">
+        </h1>
+        <img class="home-hero__banner" src="<%= homeAsset(homeBanner) %>" alt="云南养老金融生态圈" width="576" height="70">
+        <img class="home-hero__tagline" src="<%= homeAsset(homeTagline) %>" alt="<%= homeSite.home_subtitle || '一点接入 养老无忧' %>" width="398" height="46">
+      </section>
+      <nav class="home-entry-nav" aria-label="养老金融服务分类">
+        <ul class="home-entry-grid<%= homeEntries.length === 5 ? ' home-entry-grid--signature' : '' %>">
+          <% homeEntries.forEach((entry) => { const entryKey = entryTheme(entry); const entryImage = entry.home_icon || entry.icon_image || entryImages[entryKey] || entry.title_image; const href = entryHref(entry); if (!entryImage) throw new Error(`首页入口“${entry.title || ''}”缺少图片`); %>
+            <li class="home-entry">
+              <a class="home-entry__link<%= href === '#' ? ' is-disabled' : '' %>" href="<%= href %>"<% if (href === '#') { %> aria-disabled="true" data-disabled-link<% } %>>
+                <img src="<%= homeAsset(entryImage) %>" alt="<%= entry.title || entry.decorative_character || '' %>" loading="eager" decoding="async">
+              </a>
+            </li>
+          <% }); %>
+        </ul>
+      </nav>
+    </main>
+    <%- include('partials/footer', { site: homeSite, page: homePage, theme: 'home', asset: homeAsset }) %>
+  </div>
+</body>
+</html>

@@ -1,0 +1,22 @@
+<%
+  const backgroundPage = (typeof page !== 'undefined' && page) || {};
+  const backgroundAsset = typeof asset === 'function' ? asset : (value) => value;
+  const backgroundTheme = typeof theme === 'string' && theme ? theme : 'hui';
+  const topDecorations = {
+    home: '/assets/images/decor/home-top.png',
+    hui: '/assets/images/decor/hui-top.png',
+    yi: '/assets/images/decor/yi-top.png',
+    yang: '/assets/images/decor/yang-top.png',
+    le: '/assets/images/decor/le-top.png',
+    chuan: '/assets/images/decor/chuan-top.png',
+  };
+  const configuredValue = backgroundPage.top_decoration_image || backgroundPage.background_top_image || backgroundPage.background_image || '';
+  const configuredTop = String(configuredValue).startsWith('/')
+    ? configuredValue
+    : (topDecorations[configuredValue] || '');
+  const topDecoration = configuredTop || topDecorations[backgroundTheme] || topDecorations.hui;
+%>
+<div class="page-background" aria-hidden="true">
+  <img class="page-background__top" src="<%= backgroundAsset(topDecoration) %>" alt="" width="720" height="300" fetchpriority="high">
+  <div class="page-background__columns"></div>
+</div>

@@ -1,0 +1,21 @@
+<%
+  const footerSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
+  const footerPage = (typeof page !== 'undefined' && page) || {};
+  const footerAsset = typeof asset === 'function' ? asset : (value) => value;
+  const footerTheme = typeof theme === 'string' && theme ? theme : 'hui';
+  const bottomDecorations = {
+    home: '/assets/images/decor/home-bottom.png',
+    hui: '/assets/images/decor/hui-bottom.png',
+    yi: '/assets/images/decor/yi-bottom.png',
+    yang: '/assets/images/decor/yang-bottom.png',
+    le: '/assets/images/decor/le-bottom.png',
+    chuan: '/assets/images/decor/chuan-bottom.png',
+  };
+  const configuredBottom = footerPage.bottom_decoration_image || footerPage.background_bottom_image;
+  const bottomDecoration = configuredBottom || bottomDecorations[footerTheme] || bottomDecorations.hui;
+  const copyright = footerSite.copyright_text || footerSite.copyright || '';
+%>
+<footer class="site-footer">
+  <img class="site-footer__scene" src="<%= footerAsset(bottomDecoration) %>" alt="" aria-hidden="true" loading="lazy" decoding="async">
+  <% if (copyright) { %><p class="site-footer__copyright"><%= copyright %></p><% } %>
+</footer>

@@ -1,0 +1,24 @@
+<%
+  const linkData = (typeof item !== 'undefined' && item) || (typeof card !== 'undefined' && card) || {};
+  const linkPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
+  const linkUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
+  const linkTitle = linkData.title || linkData.name || '';
+  const linkTargetId = linkData.target_page_id ?? linkData.targetPageId ?? null;
+  let linkTarget = linkData.href || linkData.target_url || linkData.targetUrl || linkData.url || '';
+  if (!linkTarget && linkTargetId !== null && linkPageUrl) {
+    try { linkTarget = linkPageUrl(linkTargetId) || ''; } catch (_) { linkTarget = ''; }
+  }
+  if (!linkTarget && linkTargetId !== null && linkUrlMap) {
+    if (linkUrlMap instanceof Map) linkTarget = linkUrlMap.get(linkTargetId) || linkUrlMap.get(String(linkTargetId)) || '';
+    else linkTarget = linkUrlMap[linkTargetId] || linkUrlMap[String(linkTargetId)] || '';
+  }
+  const linkHref = linkTarget || linkData.external_url || linkData.externalUrl || '#';
+  const linkExternal = Boolean(linkData.external_url || linkData.externalUrl || /^https?:\/\//iu.test(linkHref));
+  const linkDisabled = linkHref === '#';
+%>
+<li class="text-link-item">
+  <a class="text-link-item__link<%= linkDisabled ? ' is-disabled' : '' %>" href="<%= linkHref %>"<% if (linkExternal) { %> target="_blank" rel="noopener noreferrer"<% } %><% if (linkDisabled) { %> aria-disabled="true" data-disabled-link<% } %>>
+    <span class="text-link-item__bullet" aria-hidden="true"></span>
+    <span class="text-link-item__label"><%= linkTitle %></span>
+  </a>
+</li>

@@ -1,0 +1,44 @@
+<%
+  const listSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
+  const listPage = (typeof page !== 'undefined' && page) || {};
+  const listAsset = typeof asset === 'function' ? asset : (value) => value;
+  const listPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
+  const listUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
+  const listParentUrl = (typeof parentUrl === 'string' && parentUrl) || listPage.parent_url || (listPage.parent && listPage.parent.url) || '/';
+  const suppliedCards = typeof cards !== 'undefined' && Array.isArray(cards) ? cards : (Array.isArray(listPage.cards) ? listPage.cards : []);
+  const listItems = suppliedCards;
+  const explicitTheme = `${listPage.theme || listPage.background_image || ''}`.trim().toLowerCase();
+  const themeSource = `${listPage.decorative_character || ''} ${listPage.slug || ''} ${listPage.title || ''}`.toLowerCase();
+  let listTheme = ['hui', 'yi', 'yang', 'le', 'chuan'].includes(explicitTheme) ? explicitTheme : 'hui';
+  if (!explicitTheme) {
+    if (themeSource.includes('医') || /(^|[\s/_-])yi($|[\s/_-])/u.test(themeSource)) listTheme = 'yi';
+    else if (themeSource.includes('养') || /(^|[\s/_-])yang($|[\s/_-])/u.test(themeSource)) listTheme = 'yang';
+    else if (themeSource.includes('乐') || /(^|[\s/_-])le($|[\s/_-])/u.test(themeSource)) listTheme = 'le';
+    else if (themeSource.includes('传') || /(^|[\s/_-])chuan($|[\s/_-])/u.test(themeSource)) listTheme = 'chuan';
+  }
+  const classroomLayout = listPage.layout === 'classroom' || listPage.card_layout === 'classroom' || String(listPage.title || '').includes('养老课堂');
+  const pageKind = classroomLayout ? 'classroom' : (String(listPage.title || '').includes('理财产品') ? 'products' : 'standard');
+%>
+<!doctype html>
+<html lang="zh-CN">
+<%- include('partials/head', { site: listSite, page: listPage, asset: listAsset }) %>
+<body class="public-site template-card-list theme-<%= listTheme %> page--<%= pageKind %>">
+  <a class="skip-link" href="#main-content">跳至主要内容</a>
+  <div class="page-canvas">
+    <%- include('partials/page-background', { page: listPage, theme: listTheme, asset: listAsset }) %>
+    <%- include('partials/header', { page: listPage, parentUrl: listParentUrl, asset: listAsset }) %>
+    <main class="page-main" id="main-content">
+      <section class="card-list card-list--<%= classroomLayout ? 'classroom' : 'standard' %>" aria-label="<%= listPage.title || '链接列表' %>">
+        <% listItems.forEach((card) => { %>
+          <% if (card.item_type === 'text_link') { %>
+            <ul class="text-link-list text-link-list--embedded"><%- include('partials/text-link', { item: card, pageUrl: listPageUrl, urlMap: listUrlMap }) %></ul>
+          <% } else { %>
+            <%- include('partials/card', { card, asset: listAsset, pageUrl: listPageUrl, urlMap: listUrlMap, layout: classroomLayout ? 'classroom' : 'standard' }) %>
+          <% } %>
+        <% }); %>
+      </section>
+    </main>
+    <%- include('partials/footer', { site: listSite, page: listPage, theme: listTheme, asset: listAsset }) %>
+  </div>
+</body>
+</html>

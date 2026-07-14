@@ -1,0 +1,20 @@
+<%
+  const headSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
+  const headPage = (typeof page !== 'undefined' && page) || {};
+  const headAsset = typeof asset === 'function' ? asset : (value) => value;
+  const siteName = headSite.site_name || headSite.name || headSite.website_name || '工银养老金融';
+  const pageName = headPage.title || '';
+  const documentTitle = pageName && pageName !== siteName ? `${pageName} - ${siteName}` : siteName;
+  const description = headPage.description || headSite.description || '如意人生养老金融全面解决方案';
+%>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="theme-color" content="#f2dcbf">
+  <meta name="description" content="<%= description %>">
+  <title><%= documentTitle %></title>
+  <link rel="icon" type="image/png" href="<%= headAsset('/assets/images/home/entry-hui.png') %>">
+  <link rel="stylesheet" href="<%= headAsset('/assets/css/site.css') %>">
+  <script src="<%= headAsset('/assets/js/site.js') %>" defer></script>
+</head>

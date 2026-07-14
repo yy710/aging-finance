@@ -1,0 +1,29 @@
+<%
+  const cardData = (typeof card !== 'undefined' && card) || {};
+  const cardAsset = typeof asset === 'function' ? asset : (value) => value;
+  const cardPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
+  const cardUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
+  const cardTitle = cardData.title || cardData.name || '';
+  const cardDescription = cardData.description || '';
+  const cardImage = cardData.image_path || cardData.imagePath || cardData.image_url || cardData.image || '';
+  const targetId = cardData.target_page_id ?? cardData.targetPageId ?? null;
+  let resolvedTarget = cardData.href || cardData.target_url || cardData.targetUrl || cardData.url || '';
+  if (!resolvedTarget && targetId !== null && cardPageUrl) {
+    try { resolvedTarget = cardPageUrl(targetId) || ''; } catch (_) { resolvedTarget = ''; }
+  }
+  if (!resolvedTarget && targetId !== null && cardUrlMap) {
+    if (cardUrlMap instanceof Map) resolvedTarget = cardUrlMap.get(targetId) || cardUrlMap.get(String(targetId)) || '';
+    else resolvedTarget = cardUrlMap[targetId] || cardUrlMap[String(targetId)] || '';
+  }
+  const cardHref = resolvedTarget || cardData.external_url || cardData.externalUrl || '#';
+  const isExternal = Boolean(cardData.external_url || cardData.externalUrl || /^https?:\/\//iu.test(cardHref));
+  const disabled = cardHref === '#';
+  const cardAlt = cardData.image_alt || cardData.imageAlt || cardTitle;
+  const classroom = typeof layout === 'string' && layout === 'classroom';
+  if (!cardImage) throw new Error(`图文 Card“${cardTitle}”缺少包含可见文字的图片`);
+%>
+<article class="visual-card<%= classroom ? ' visual-card--classroom' : '' %>">
+  <a class="visual-card__link<%= disabled ? ' is-disabled' : '' %>" href="<%= cardHref %>"<% if (isExternal) { %> target="_blank" rel="noopener noreferrer"<% } %><% if (disabled) { %> aria-disabled="true" data-disabled-link<% } %>>
+    <img class="visual-card__artwork" src="<%= cardAsset(cardImage) %>" alt="<%= cardAlt %>" loading="lazy" decoding="async">
+  </a>
+</article>

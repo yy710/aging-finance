@@ -1,0 +1,38 @@
+<%
+  const linksSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
+  const linksPage = (typeof page !== 'undefined' && page) || {};
+  const linksAsset = typeof asset === 'function' ? asset : (value) => value;
+  const linksPageUrl = typeof pageUrl === 'function' ? pageUrl : null;
+  const linksUrlMap = typeof urlMap !== 'undefined' ? urlMap : null;
+  const linksParentUrl = (typeof parentUrl === 'string' && parentUrl) || linksPage.parent_url || (linksPage.parent && linksPage.parent.url) || '/';
+  const linkItems = typeof cards !== 'undefined' && Array.isArray(cards) ? cards : (Array.isArray(linksPage.cards) ? linksPage.cards : []);
+  const explicitTheme = `${linksPage.theme || linksPage.background_image || ''}`.trim().toLowerCase();
+  const themeSource = `${linksPage.decorative_character || ''} ${linksPage.slug || ''} ${linksPage.title || ''}`.toLowerCase();
+  let linksTheme = ['hui', 'yi', 'yang', 'le', 'chuan'].includes(explicitTheme) ? explicitTheme : 'hui';
+  if (!explicitTheme) {
+    if (themeSource.includes('医') || /(^|[\s/_-])yi($|[\s/_-])/u.test(themeSource)) linksTheme = 'yi';
+    else if (themeSource.includes('养') || /(^|[\s/_-])yang($|[\s/_-])/u.test(themeSource)) linksTheme = 'yang';
+    else if (themeSource.includes('乐') || /(^|[\s/_-])le($|[\s/_-])/u.test(themeSource)) linksTheme = 'le';
+    else if (themeSource.includes('传') || /(^|[\s/_-])chuan($|[\s/_-])/u.test(themeSource)) linksTheme = 'chuan';
+  }
+  const ministryPage = /ministry|human-resources|renshe|人力资源/u.test(`${linksPage.slug || ''} ${linksPage.title || ''}`.toLowerCase());
+  const leadImage = linksPage.lead_image || linksPage.banner_image || (ministryPage ? '/assets/images/cards/hui-ministry-banner.png' : '');
+%>
+<!doctype html>
+<html lang="zh-CN">
+<%- include('partials/head', { site: linksSite, page: linksPage, asset: linksAsset }) %>
+<body class="public-site template-link-list theme-<%= linksTheme %><%= leadImage ? ' page--with-lead' : '' %>">
+  <a class="skip-link" href="#main-content">跳至主要内容</a>
+  <div class="page-canvas">
+    <%- include('partials/page-background', { page: linksPage, theme: linksTheme, asset: linksAsset }) %>
+    <%- include('partials/header', { page: linksPage, parentUrl: linksParentUrl, asset: linksAsset }) %>
+    <main class="page-main link-list-main" id="main-content">
+      <% if (leadImage) { %><img class="link-list-lead" src="<%= linksAsset(leadImage) %>" alt="<%= linksPage.lead_image_alt || '中华人民共和国人力资源和社会保障部' %>" decoding="async"><% } %>
+      <ul class="text-link-list">
+        <% linkItems.forEach((item) => { %><%- include('partials/text-link', { item, pageUrl: linksPageUrl, urlMap: linksUrlMap }) %><% }); %>
+      </ul>
+    </main>
+    <%- include('partials/footer', { site: linksSite, page: linksPage, theme: linksTheme, asset: linksAsset }) %>
+  </div>
+</body>
+</html>

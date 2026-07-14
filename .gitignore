@@ -1,0 +1,11 @@
+node_modules/
+data/*.db
+data/*.db-*
+uploads/*
+!uploads/.gitkeep
+public-generated/
+logs/
+config/private.json
+.DS_Store
+*.log
+coverage/
