@@ -120,12 +120,23 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
 
   const compiledCssPath = path.join(outputDir, 'assets', 'css', 'site.css');
   const compiledCss = await fs.readFile(compiledCssPath);
+  const compiledCssText = compiledCss.toString('utf8');
   assert.equal(first.manifest[cssKey], shortHash(compiledCss));
   assert.match(
-    compiledCss.toString('utf8'),
+    compiledCssText,
     new RegExp(
       `/assets/images/decor/hui-middle\\.png\\?v=${first.manifest[middleKey]}`,
     ),
+  );
+  assert.match(
+    compiledCssText,
+    /\.card-list--classroom\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/su,
+    'the classroom card grid must use two columns',
+  );
+  assert.doesNotMatch(
+    compiledCssText,
+    /\.card-list--classroom\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/su,
+    'mobile styles must not collapse the classroom card grid to one column',
   );
 
   const detailHtml = await fs.readFile(
