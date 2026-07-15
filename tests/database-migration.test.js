@@ -11,10 +11,25 @@ const {
   openDatabase,
 } = require('../server/database');
 
-test('existing databases migrate to support the image-only page template', (t) => {
+test('existing databases migrate image-only pages and the default copyright', (t) => {
   const db = openDatabase(':memory:', { initialize: false });
   t.after(() => closeDatabase(db));
   db.exec(`
+    CREATE TABLE site_settings (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      site_name TEXT NOT NULL DEFAULT '养老金融',
+      logo_path TEXT NOT NULL DEFAULT '',
+      home_title TEXT NOT NULL DEFAULT '如意人生',
+      home_subtitle TEXT NOT NULL DEFAULT '',
+      copyright_text TEXT NOT NULL DEFAULT '',
+      default_background TEXT NOT NULL DEFAULT '',
+      extra_config TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+      CHECK (json_valid(extra_config) AND json_type(extra_config) = 'object')
+    );
+    INSERT INTO site_settings (id, copyright_text)
+    VALUES (1, '中国工商银行云南省分行 · 养老金融服务');
     CREATE TABLE pages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       parent_id INTEGER REFERENCES pages(id) ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -85,6 +100,10 @@ test('existing databases migrate to support the image-only page template', (t) =
     status: 'published',
   });
   assert.equal(imagePage.template_type, 'image-only');
+  assert.equal(
+    service.getSiteSettings().copyright_text,
+    '中国工商银行云南省分行 · 养老金融与资产托管部',
+  );
   assert.equal(db.pragma('user_version', { simple: true }), DATABASE_VERSION);
   assert.equal(db.pragma('foreign_keys', { simple: true }), 1);
   assert.deepEqual(db.pragma('foreign_key_check'), []);

@@ -5,7 +5,9 @@ const path = require('node:path');
 const BetterSqlite3 = require('better-sqlite3');
 
 const DEFAULT_DATABASE_PATH = path.resolve(process.cwd(), 'data', 'site.db');
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
+const LEGACY_COPYRIGHT_TEXT = '中国工商银行云南省分行 · 养老金融服务';
+const CURRENT_COPYRIGHT_TEXT = '中国工商银行云南省分行 · 养老金融与资产托管部';
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS site_settings (
@@ -14,7 +16,7 @@ CREATE TABLE IF NOT EXISTS site_settings (
   logo_path TEXT NOT NULL DEFAULT '',
   home_title TEXT NOT NULL DEFAULT '如意人生',
   home_subtitle TEXT NOT NULL DEFAULT '',
-  copyright_text TEXT NOT NULL DEFAULT '',
+  copyright_text TEXT NOT NULL DEFAULT '${CURRENT_COPYRIGHT_TEXT}',
   default_background TEXT NOT NULL DEFAULT '',
   extra_config TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
@@ -210,6 +212,16 @@ function migratePagesForImageOnlyTemplate(db) {
   return true;
 }
 
+function migrateCopyrightText(db) {
+  const result = db.prepare(`
+    UPDATE site_settings
+    SET copyright_text = ?,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+    WHERE trim(copyright_text) = '' OR copyright_text = ?
+  `).run(CURRENT_COPYRIGHT_TEXT, LEGACY_COPYRIGHT_TEXT);
+  return result.changes > 0;
+}
+
 function initializeSchema(db) {
   const currentVersion = Number(db.pragma('user_version', { simple: true })) || 0;
   db.exec(SCHEMA_SQL);
@@ -220,6 +232,7 @@ function initializeSchema(db) {
     VALUES (1)
     ON CONFLICT(id) DO NOTHING
   `).run();
+  migrateCopyrightText(db);
   db.pragma(`user_version = ${Math.max(currentVersion, DATABASE_VERSION)}`);
   return db;
 }
@@ -271,6 +284,7 @@ module.exports = {
   configureDatabase,
   createDatabase: openDatabase,
   initializeSchema,
+  migrateCopyrightText,
   migratePagesForImageOnlyTemplate,
   openDatabase,
 };

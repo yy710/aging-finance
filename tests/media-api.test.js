@@ -162,10 +162,11 @@ test('mobile page uploads are resized, converted to PNG, and rendered without de
     pageHtml,
     new RegExp(`class="image-only-page__image" src="/uploads/${media.stored_name}\\?v=[a-f0-9]{10}"`),
   );
-  assert.equal((pageHtml.match(/<img\b/gu) || []).length, 1);
+  assert.equal((pageHtml.match(/<img\b/gu) || []).length, 2);
+  assert.match(pageHtml, /class="back-button" href="\/"/u);
   assert.doesNotMatch(
     pageHtml,
-    /back-button|page-background|page-heading|site-footer|<h1|不应显示的正文|不应显示/u,
+    /page-background|page-heading|site-footer|<h1|不应显示的正文|不应显示/u,
   );
 
   const replacementSource = await sharp({

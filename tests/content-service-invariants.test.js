@@ -115,5 +115,9 @@ test('replace seed deletes a self-referencing page tree leaf-first and reseeds d
   assert.equal(second.pageCount, 24);
   assert.equal(second.cardCount, 32);
   assert.equal(second.fourthLevelExampleUrl, '/hui/human-resources/national-policies/');
+  assert.equal(
+    new ContentService(db).getSiteSettings().copyright_text,
+    '中国工商银行云南省分行 · 养老金融与资产托管部',
+  );
   db.close();
 });

@@ -101,6 +101,7 @@ body.template-image-only {
 }
 
 .image-only-page {
+  position: relative;
   width: min(100%, var(--canvas-max));
   min-height: 100vh;
   margin: 0 auto;
@@ -344,6 +345,18 @@ body.template-image-only {
 .visual-card--classroom .visual-card__link,
 .visual-card--classroom .visual-card__artwork {
   border-radius: 0;
+}
+
+.visual-card__title {
+  display: block;
+  margin-top: min(1.3889vw, 10px);
+  color: var(--deep-blue);
+  font-family: SimSun, STSong, "Songti SC", serif;
+  font-size: clamp(13px, 3.3333vw, 24px);
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .text-link-list--embedded {

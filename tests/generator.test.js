@@ -80,13 +80,53 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
         ].join(''),
         status: 'published',
       },
+      {
+        id: 4,
+        parent_id: 2,
+        title: '养老课堂',
+        slug: 'retirement-class',
+        template_type: 'card-list',
+        decorative_character: '惠',
+        title_image: '/assets/images/titles/hui-retirement-classroom.png',
+        background_image: 'hui',
+        status: 'published',
+      },
+      {
+        id: 5,
+        parent_id: 2,
+        title: '文字入口页面',
+        slug: 'text-links',
+        template_type: 'link-list',
+        decorative_character: '惠',
+        title_image: '/assets/images/titles/hui-national-policy.png',
+        background_image: 'hui',
+        status: 'published',
+      },
     ],
-    cards: [],
+    cards: [
+      {
+        id: 1,
+        page_id: 4,
+        item_type: 'image_card',
+        title: '养老课堂入口标题',
+        image_path: '/assets/images/classroom/classroom-01.png',
+        image_alt: '养老课堂海报',
+        external_url: 'https://example.com/classroom',
+        sort_order: 0,
+        status: 'published',
+      },
+    ],
   };
 
   const first = await generateSite({ projectRoot, snapshot });
-  assert.equal(first.pageCount, 3);
-  assert.deepEqual(first.urls, ['/', '/section/', '/section/detail/']);
+  assert.equal(first.pageCount, 5);
+  assert.deepEqual(first.urls, [
+    '/',
+    '/section/',
+    '/section/detail/',
+    '/section/retirement-class/',
+    '/section/text-links/',
+  ]);
   for (const hash of Object.values(first.manifest)) {
     assert.match(hash, /^[a-f0-9]{10}$/);
   }
@@ -101,6 +141,7 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   const cssKey = '/assets/css/site.css';
   const middleKey = '/assets/images/decor/hui-middle.png';
   const homeBottomKey = '/assets/images/decor/home-bottom.png';
+  const backKey = '/assets/images/global/back.png';
   const scriptKey = '/assets/js/site.js';
   const firstHome = await fs.readFile(path.join(outputDir, 'index.html'), 'utf8');
   assert.match(
@@ -148,6 +189,11 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
     /class="back-button" href="\/section\/"/,
     'a deep link must always include its explicit parent URL',
   );
+  assert.match(
+    detailHtml,
+    new RegExp(`/assets/images/global/back\\.png\\?v=${first.manifest[backKey]}`),
+    'the return button must use the versioned shared icon',
+  );
   assert.doesNotMatch(detailHtml, /window\.__unsafe|<script>\s*window/iu);
   assert.match(
     detailHtml,
@@ -155,6 +201,18 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   );
   assert.match(detailHtml, /href="\/section\/"/u);
   assert.match(detailHtml, /src="https:\/\/example\.com\/external\.png"/u);
+
+  const classroomHtml = await fs.readFile(
+    path.join(outputDir, 'section', 'retirement-class', 'index.html'),
+    'utf8',
+  );
+  assert.match(classroomHtml, /class="visual-card__title">养老课堂入口标题<\/span>/u);
+  assert.match(classroomHtml, /class="back-button" href="\/section\/"/u);
+  const textLinksHtml = await fs.readFile(
+    path.join(outputDir, 'section', 'text-links', 'index.html'),
+    'utf8',
+  );
+  assert.match(textLinksHtml, /class="back-button" href="\/section\/"/u);
 
   const second = await generateSite({ projectRoot, snapshot });
   assert.deepEqual(second.manifest, first.manifest);

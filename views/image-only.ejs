@@ -2,6 +2,7 @@
   const imageOnlySite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
   const imageOnlyPage = (typeof page !== 'undefined' && page) || {};
   const imageOnlyPublicUrl = typeof publicUrl === 'function' ? publicUrl : (typeof asset === 'function' ? asset : (value) => value);
+  const imageOnlyParentUrl = imageOnlyPublicUrl((typeof parentUrl === 'string' && parentUrl) || imageOnlyPage.parent_url || (imageOnlyPage.parent && imageOnlyPage.parent.url) || '/');
   const imagePath = imageOnlyPage.title_image || '';
   if (!imagePath) throw new Error('单张图片页缺少页面图片');
 %>
@@ -10,6 +11,7 @@
 <%- include('partials/head', { site: imageOnlySite, page: imageOnlyPage, publicUrl: imageOnlyPublicUrl, publicBasePath: typeof publicBasePath === 'string' ? publicBasePath : '' }) %>
 <body class="template-image-only">
   <main class="image-only-page">
+    <%- include('partials/back-button', { publicUrl: imageOnlyPublicUrl, parentUrl: imageOnlyParentUrl }) %>
     <img class="image-only-page__image" src="<%= imageOnlyPublicUrl(imagePath) %>" alt="<%= imageOnlyPage.title || '' %>" decoding="async" fetchpriority="high">
   </main>
 </body>

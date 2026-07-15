@@ -25,5 +25,6 @@
 <article class="visual-card<%= classroom ? ' visual-card--classroom' : '' %>">
   <a class="visual-card__link<%= disabled ? ' is-disabled' : '' %>" href="<%= cardHref %>"<% if (isExternal) { %> target="_blank" rel="noopener noreferrer"<% } %><% if (disabled) { %> aria-disabled="true" data-disabled-link<% } %>>
     <img class="visual-card__artwork" src="<%= cardPublicUrl(cardImage) %>" alt="<%= cardAlt %>" loading="lazy" decoding="async">
+    <% if (classroom) { %><span class="visual-card__title"><%= cardTitle %></span><% } %>
   </a>
 </article>

@@ -912,7 +912,7 @@ function seedExampleData(db, { replace = false } = {}) {
       logo_path: '/assets/images/home/logo.png',
       home_title: '如意人生',
       home_subtitle: '一点接入 养老无忧',
-      copyright_text: '中国工商银行云南省分行 · 养老金融服务',
+      copyright_text: '中国工商银行云南省分行 · 养老金融与资产托管部',
       default_background: 'home',
       extra_config: {
         homeTitleImage: '/assets/images/home/main-title.png',

@@ -1,6 +1,6 @@
 <%
   const footerSite = (typeof site !== 'undefined' && site) || (typeof settings !== 'undefined' && settings) || {};
-  const copyright = footerSite.copyright_text || footerSite.copyright || '';
+  const copyright = footerSite.copyright_text || footerSite.copyright || '中国工商银行云南省分行 · 养老金融与资产托管部';
 %>
 <footer class="site-footer">
   <% if (copyright) { %><p class="site-footer__copyright"><%= copyright %></p><% } %>

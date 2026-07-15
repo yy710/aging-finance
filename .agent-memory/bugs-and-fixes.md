@@ -27,4 +27,11 @@
 - Correct local QA: start without `PUBLIC_BASE_PATH` and open `http://127.0.0.1:3100/admin/`, or test the full `/af` URL through the configured reverse proxy.
 - This is deployment topology, not an application route regression.
 
+## Classroom titles, image-only return navigation, and legacy footer text
+
+- Symptoms:养老课堂 image cards did not render `card.title`; `image-only` omitted the shared return control; existing SQLite settings retained the old department name.
+- Fix: render `visual-card__title` for the classroom layout, include the shared return-button partial in `image-only`, and migrate the legacy/blank copyright value at database version 3.
+- Asset fix: `public-assets/images/global/back.jpg` is actually a 1216×1241 RGBA PNG despite its extension. It is normalized into the source-controlled `public-assets/images/global/back.png` at the legacy 92×93 dimensions, so clean generation can version and publish the gold return icon without relying on an old generated snapshot.
+- Verification: 16/16 tests, `/af` generation of 24 pages and 82 hashed assets, desktop and 430×932 browser checks, explicit text-page return navigation, and clean console.
+
 Provenance: source_agent=Codex; updated=2026-07-15.

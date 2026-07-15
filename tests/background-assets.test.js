@@ -43,3 +43,10 @@ test('theme background slices cover every row of each original background', asyn
     assert.equal(top.height + middle.height + bottom.height, source.height, `${theme} row coverage`);
   }
 });
+
+test('shared return icon preserves the legacy display dimensions', async () => {
+  assert.deepEqual(
+    await dimensions(path.join('public-assets', 'images', 'global', 'back.png')),
+    { width: 92, height: 93 },
+  );
+});
