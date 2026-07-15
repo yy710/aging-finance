@@ -17,6 +17,7 @@ const DEFAULT_TEMPLATE_TYPES = new Set([
   'card-list',
   'content',
   'link-list',
+  'image-only',
 ]);
 
 const DEFAULT_CARD_TYPES = new Set(['image_card', 'text_link']);

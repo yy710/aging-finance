@@ -28,6 +28,11 @@
   const contentEditor = $('#page-content-editor');
   const contentValue = $('#page-content-value');
   const contentField = $('#page-content-field');
+  const pageTitleImageSelect = $('#page-title-image');
+  const pageTitleImageLabel = $('#page-title-image-label');
+  const pageImageUploadTrigger = $('#page-image-upload-trigger');
+  const pageImageUploadInput = $('#page-image-upload-input');
+  const pageImageUploadHint = $('#page-image-upload-hint');
   const publicBasePath = $('meta[name="public-base-path"]')?.content || '';
   const pageTemplatesWithoutBody = new Set(
     String(contentField?.dataset.hiddenForTemplates || '').split(/\s+/u).filter(Boolean),
@@ -200,7 +205,7 @@
       : imageOrPath;
     const imagePath = typeof imageOrPath === 'string' ? imageOrPath : imageOrPath?.relative_path;
     const page = state.pages.find((item) => item.title_image === imagePath);
-    if (page) return `${page.title} · 标题图片`;
+    if (page) return `${page.title} · ${page.template_type === 'image-only' ? '页面整图' : '标题图片'}`;
     const card = state.cards.find((item) => item.image_path === imagePath);
     if (card) return `${card.title} · 入口图片`;
     if (image?.replaceable && image.original_name) return image.original_name;
@@ -228,7 +233,7 @@
   }
 
   function renderImageSelectors() {
-    const pageImageSelect = $('#page-title-image');
+    const pageImageSelect = pageTitleImageSelect;
     const cardImageSelect = $('#card-image');
     const backgroundSelect = $('#page-background');
     const values = {
@@ -279,6 +284,7 @@
     const hasPageBody = !pageTemplatesWithoutBody.has(pageForm.elements.template_type.value);
     return {
       title: pageForm.elements.title.value || '未命名页面',
+      template_type: pageForm.elements.template_type.value,
       title_image: pageForm.elements.title_image.value,
       contentText: hasPageBody ? contentEditor.innerText.trim() : '',
       status: pageForm.elements.status.value,
@@ -286,22 +292,43 @@
   }
 
   function syncPageTemplateFields() {
-    contentField.hidden = pageTemplatesWithoutBody.has(pageForm.elements.template_type.value);
+    const templateType = pageForm.elements.template_type.value;
+    const imageOnly = templateType === 'image-only';
+    contentField.hidden = pageTemplatesWithoutBody.has(templateType);
+    pageTitleImageSelect.hidden = imageOnly;
+    pageTitleImageLabel.textContent = imageOnly ? '页面图片' : '标题图片';
+    const pageImagePreviewButton = $('[data-preview-field="page-title-image"]');
+    pageImagePreviewButton.setAttribute('aria-label', imageOnly ? '查看页面图片' : '查看标题图片');
+    pageImageUploadTrigger.hidden = !imageOnly;
+    pageImageUploadHint.hidden = !imageOnly;
+    $('#page-decoration-field').hidden = imageOnly;
+    $('#page-background-field').hidden = imageOnly;
+    const editingPage = state.pages.find((page) => page.id === state.editingPageId);
+    $('#cards-panel').hidden = !editingPage || imageOnly;
   }
 
   function showLocalPagePreview(page = formPageSnapshot(), note = '正在预览尚未发布的内容') {
     $('#page-preview-frame').hidden = true;
     const fallback = $('#page-preview-fallback');
     fallback.hidden = false;
-    const cards = state.cards.slice(0, 4).map((card) => card.image_path
-      ? `<img src="${escapeHtml(imagePublicUrl(card.image_path) || card.image_url)}" alt="${escapeHtml(card.title)}">`
-      : `<span>${escapeHtml(card.title)}</span>`).join('');
-    fallback.innerHTML = `
-      <div class="draft-preview-canvas">
-        ${page.title_image ? `<img class="draft-preview-title" src="${escapeHtml(imagePublicUrl(page.title_image))}" alt="">` : `<h3>${escapeHtml(page.title)}</h3>`}
-        ${page.contentText ? `<p>${escapeHtml(page.contentText)}</p>` : ''}
-        ${cards ? `<div class="draft-preview-cards">${cards}</div>` : '<p class="draft-preview-empty">保存页面入口后会显示在这里。</p>'}
-      </div>`;
+    if (page.template_type === 'image-only') {
+      fallback.innerHTML = `
+        <div class="draft-preview-image-only">
+          ${page.title_image
+            ? `<img src="${escapeHtml(imagePublicUrl(page.title_image))}" alt="${escapeHtml(page.title || '')}">`
+            : '<p class="draft-preview-empty">请上传手机页面图片。</p>'}
+        </div>`;
+    } else {
+      const cards = state.cards.slice(0, 4).map((card) => card.image_path
+        ? `<img src="${escapeHtml(imagePublicUrl(card.image_path) || card.image_url)}" alt="${escapeHtml(card.title)}">`
+        : `<span>${escapeHtml(card.title)}</span>`).join('');
+      fallback.innerHTML = `
+        <div class="draft-preview-canvas">
+          ${page.title_image ? `<img class="draft-preview-title" src="${escapeHtml(imagePublicUrl(page.title_image))}" alt="">` : `<h3>${escapeHtml(page.title)}</h3>`}
+          ${page.contentText ? `<p>${escapeHtml(page.contentText)}</p>` : ''}
+          ${cards ? `<div class="draft-preview-cards">${cards}</div>` : '<p class="draft-preview-empty">保存页面入口后会显示在这里。</p>'}
+        </div>`;
+    }
     $('#page-preview-note').textContent = note;
   }
 
@@ -347,7 +374,6 @@
     $('#delete-page-button').hidden = !page || page.template_type === 'home';
     pageForm.elements.template_type.disabled = page?.template_type === 'home';
     pageForm.elements.status.disabled = page?.template_type === 'home';
-    $('#cards-panel').hidden = !page;
     syncPageTemplateFields();
     renderPageOptions(values.parent_id);
     renderImageSelectors();
@@ -443,10 +469,10 @@
     cardForm.hidden = true;
   }
 
-  async function uploadImage(file) {
+  async function uploadImage(file, endpoint = '/media') {
     const formData = new FormData();
     formData.append('image', file);
-    const result = await api('/media', { method: 'POST', body: formData });
+    const result = await api(endpoint, { method: 'POST', body: formData });
     await loadMedia();
     return result.media || result;
   }
@@ -577,6 +603,36 @@
 
   $('#new-card-button').addEventListener('click', () => fillCardForm(null));
   $('#cancel-card-button').addEventListener('click', () => { cardForm.hidden = true; });
+
+  pageImageUploadTrigger.addEventListener('click', () => pageImageUploadInput.click());
+  pageImageUploadInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    setFormMessage('#page-form-message', '正在转换并上传页面图片…');
+    try {
+      const media = await uploadImage(file, '/media/mobile-page');
+      pageForm.elements.title_image.value = media.relative_path;
+      state.pageDirty = true;
+      updateImageThumb('page-title-image');
+      updatePagePreview(state.pages.find((item) => item.id === state.selectedPageId), { forceLocal: true });
+      setFormMessage('#page-form-message', '图片已缩放并转换为 PNG，请保存页面。');
+    } catch (error) {
+      if (error.saved && error.media) {
+        pageForm.elements.title_image.value = error.media.relative_path;
+        state.pageDirty = true;
+        updateImageThumb('page-title-image');
+        updatePagePreview(state.pages.find((item) => item.id === state.selectedPageId), { forceLocal: true });
+      }
+      const recovered = await recoverSavedPublicationFailure(error, {
+        label: '页面图片',
+        reload: loadMedia,
+        formSelector: '#page-form-message',
+      });
+      if (!recovered) setFormMessage('#page-form-message', error.message, true);
+    } finally {
+      event.target.value = '';
+    }
+  });
 
   $('#upload-trigger').addEventListener('click', () => $('#upload-input').click());
   $('#upload-input').addEventListener('change', async (event) => {

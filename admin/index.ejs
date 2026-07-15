@@ -94,9 +94,10 @@
                 <option value="card-list">图片入口列表</option>
                 <option value="content">正文内容页</option>
                 <option value="link-list">文字入口列表</option>
+                <option value="image-only">单张图片页</option>
               </select>
             </label>
-            <label class="field">
+            <label id="page-decoration-field" class="field">
               <span>页面代表字</span>
               <input name="decorative_character" maxlength="8" placeholder="例如：惠">
             </label>
@@ -104,20 +105,23 @@
               <span>显示顺序</span>
               <input name="sort_order" type="number" value="0">
             </label>
-            <label class="field field-wide">
-              <span>标题图片</span>
+            <label id="page-title-image-field" class="field field-wide">
+              <span id="page-title-image-label">标题图片</span>
               <div class="image-choice-row">
                 <select id="page-title-image" name="title_image"></select>
                 <button class="image-thumb-button" type="button" data-preview-field="page-title-image" aria-label="查看标题图片" title="查看大图">
                   <span>查看</span>
                 </button>
+                <button id="page-image-upload-trigger" class="button button-secondary" type="button" hidden>上传手机页面图片</button>
+                <input id="page-image-upload-input" type="file" accept="image/png,image/jpeg,image/webp" hidden>
               </div>
+              <small id="page-image-upload-hint" hidden>后台会自动等比缩放至最大 720px 宽，并统一保存为 PNG。</small>
             </label>
-            <label class="field field-wide">
+            <label id="page-background-field" class="field field-wide">
               <span>页面背景</span>
               <select id="page-background" name="background_image"></select>
             </label>
-            <div id="page-content-field" class="field field-wide" data-hidden-for-templates="home card-list">
+            <div id="page-content-field" class="field field-wide" data-hidden-for-templates="home card-list image-only">
               <span>页面正文</span>
               <input id="page-content-value" name="content" type="hidden">
               <div id="page-content-editor" class="content-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="在这里输入页面正文"></div>

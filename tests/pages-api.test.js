@@ -15,7 +15,7 @@ function pagePayload(overrides = {}) {
     slug: overrides.slug || 'test-page',
     template_type: overrides.template_type || 'content',
     decorative_character: overrides.decorative_character || '惠',
-    title_image: '/assets/images/titles/hui-consulting.png',
+    title_image: overrides.title_image ?? '/assets/images/titles/hui-consulting.png',
     background_image: 'hui',
     content: overrides.content || '<p>测试内容</p>',
     status: overrides.status || 'published',
@@ -26,6 +26,18 @@ test('page CRUD enforces tree constraints and full publication removes stale pat
   const runtime = await createTestRuntime(t, { realGenerator: true });
   const agent = request.agent(runtime.app);
   assert.equal((await login(agent)).status, 200);
+
+  const missingMobileImage = await agent.post('/api/pages').send(
+    pagePayload({
+      parent_id: runtime.rootPage.id,
+      title: '缺图的单张图片页',
+      slug: 'missing-mobile-image',
+      template_type: 'image-only',
+      title_image: '',
+    }),
+  );
+  assert.equal(missingMobileImage.status, 400);
+  assert.equal(missingMobileImage.body.code, 'PAGE_IMAGE_REQUIRED');
 
   const createSection = await agent.post('/api/pages').send(
     pagePayload({

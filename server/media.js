@@ -2,6 +2,9 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const multer = require('multer');
+const sharp = require('sharp');
+
+const MOBILE_PAGE_MAX_WIDTH = 720;
 
 const IMAGE_TYPES = {
   png: { mimeType: 'image/png', extensions: new Set(['.png']) },
@@ -74,6 +77,46 @@ function writeFileAtomically(targetPath, buffer) {
   }
 }
 
+function resolveStoredMediaTarget(uploadsDir, media) {
+  const currentName = path.basename(String(media.stored_name || ''));
+  if (!currentName || currentName !== media.stored_name) {
+    throw Object.assign(new Error('媒体记录中的文件路径无效。'), { statusCode: 400 });
+  }
+  const targetPath = path.resolve(uploadsDir, currentName);
+  const uploadsRoot = `${path.resolve(uploadsDir)}${path.sep}`;
+  if (!targetPath.startsWith(uploadsRoot)) {
+    throw Object.assign(new Error('媒体文件路径越界。'), { statusCode: 400 });
+  }
+  return { currentName, targetPath };
+}
+
+async function transformMobilePageImage(file) {
+  validateImageFile(file);
+  try {
+    const buffer = await sharp(file.buffer, {
+      failOn: 'error',
+      limitInputPixels: 40_000_000,
+    })
+      .rotate()
+      .resize({
+        width: MOBILE_PAGE_MAX_WIDTH,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .png({ compressionLevel: 9, adaptiveFiltering: true })
+      .toBuffer();
+    return {
+      buffer,
+      contentHash: crypto.createHash('sha256').update(buffer).digest('hex'),
+    };
+  } catch (error) {
+    throw Object.assign(
+      new Error('图片无法解码或转换，请换一张有效的 PNG、JPEG 或 WebP 图片。'),
+      { statusCode: 415, cause: error },
+    );
+  }
+}
+
 function storeNewImage(file, uploadsDir) {
   const metadata = validateImageFile(file);
   const storedName = `${crypto.randomUUID()}${metadata.extension}`;
@@ -90,20 +133,28 @@ function storeNewImage(file, uploadsDir) {
   };
 }
 
+async function storeNewMobilePageImage(file, uploadsDir) {
+  const transformed = await transformMobilePageImage(file);
+  const storedName = `${crypto.randomUUID()}.png`;
+  const targetPath = path.join(uploadsDir, storedName);
+  writeFileAtomically(targetPath, transformed.buffer);
+  return {
+    original_name: safeOriginalName(file.originalname),
+    stored_name: storedName,
+    relative_path: `/uploads/${storedName}`,
+    mime_type: 'image/png',
+    file_size: transformed.buffer.length,
+    content_hash: transformed.contentHash,
+    absolutePath: targetPath,
+  };
+}
+
 function replaceStoredImage(file, uploadsDir, media) {
   const metadata = validateImageFile(file);
-  const currentName = path.basename(String(media.stored_name || ''));
-  if (!currentName || currentName !== media.stored_name) {
-    throw Object.assign(new Error('媒体记录中的文件路径无效。'), { statusCode: 400 });
-  }
+  const { currentName, targetPath } = resolveStoredMediaTarget(uploadsDir, media);
   const currentExtension = path.extname(currentName).toLowerCase();
   if (currentExtension !== metadata.extension) {
     throw Object.assign(new Error('替换图片必须与原文件使用相同格式，以保持静态 URL 不变。'), { statusCode: 400 });
-  }
-  const targetPath = path.resolve(uploadsDir, currentName);
-  const uploadsRoot = `${path.resolve(uploadsDir)}${path.sep}`;
-  if (!targetPath.startsWith(uploadsRoot)) {
-    throw Object.assign(new Error('媒体文件路径越界。'), { statusCode: 400 });
   }
   writeFileAtomically(targetPath, file.buffer);
   return {
@@ -116,10 +167,31 @@ function replaceStoredImage(file, uploadsDir, media) {
   };
 }
 
+async function replaceStoredMobilePageImage(file, uploadsDir, media) {
+  const { currentName, targetPath } = resolveStoredMediaTarget(uploadsDir, media);
+  if (path.extname(currentName).toLowerCase() !== '.png') {
+    throw Object.assign(new Error('单张图片页的媒体文件必须使用 PNG 格式。'), { statusCode: 400 });
+  }
+  const transformed = await transformMobilePageImage(file);
+  writeFileAtomically(targetPath, transformed.buffer);
+  return {
+    ...media,
+    original_name: safeOriginalName(file.originalname),
+    mime_type: 'image/png',
+    file_size: transformed.buffer.length,
+    content_hash: transformed.contentHash,
+    absolutePath: targetPath,
+  };
+}
+
 module.exports = {
+  MOBILE_PAGE_MAX_WIDTH,
   createUpload,
   detectImageType,
   replaceStoredImage,
+  replaceStoredMobilePageImage,
   storeNewImage,
+  storeNewMobilePageImage,
+  transformMobilePageImage,
   validateImageFile,
 };

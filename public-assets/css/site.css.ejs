@@ -96,6 +96,25 @@ img {
     );
 }
 
+body.template-image-only {
+  background: #fff;
+}
+
+.image-only-page {
+  width: min(100%, var(--canvas-max));
+  min-height: 100vh;
+  margin: 0 auto;
+  line-height: 0;
+  background: #fff;
+}
+
+.image-only-page__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
 .theme-home {
   --middle-texture: url("<%= publicUrl('/assets/images/decor/home-middle.png') %>");
   --footer-scene-height: min(52.5vw, 378px);

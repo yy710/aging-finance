@@ -22,7 +22,7 @@ const {
 const { buildSiteTree, getPageById } = require('./site-tree');
 const { sanitizeContent } = require('./sanitize');
 
-const TEMPLATE_TYPES = ['home', 'card-list', 'content', 'link-list'];
+const TEMPLATE_TYPES = ['home', 'card-list', 'content', 'link-list', 'image-only'];
 const OUTPUT_MARKER_FILENAME = '.aging-finance-generated';
 const publicationQueues = new Map();
 

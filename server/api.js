@@ -4,7 +4,13 @@ const express = require('express');
 const multer = require('multer');
 
 const { HASH_LENGTH, hashBuffer } = require('./assets');
-const { createUpload, replaceStoredImage, storeNewImage } = require('./media');
+const {
+  createUpload,
+  replaceStoredImage,
+  replaceStoredMobilePageImage,
+  storeNewImage,
+  storeNewMobilePageImage,
+} = require('./media');
 const { createPublicUrl, splitReference } = require('./public-url');
 const { sanitizeContent } = require('./sanitize');
 
@@ -303,11 +309,47 @@ function createApiRouter({ config, service, generate }) {
     }
   }));
 
+  router.post('/media/mobile-page', upload.single('image'), asyncRoute(async (req, res) => {
+    const stored = await storeNewMobilePageImage(req.file, config.uploadsDir);
+    let media;
+    try {
+      media = service.createMedia({
+        original_name: stored.original_name,
+        stored_name: stored.stored_name,
+        relative_path: stored.relative_path,
+        mime_type: stored.mime_type,
+        file_size: stored.file_size,
+        content_hash: stored.content_hash,
+      });
+    } catch (error) {
+      try { fs.unlinkSync(stored.absolutePath); } catch {}
+      throw error;
+    }
+    try {
+      const publication = await generate();
+      return res.status(201).json({
+        media: presentMedia(media),
+        publication: publicationDetails(publication),
+      });
+    } catch (error) {
+      throw markPublicationFailure(error, {
+        key: 'media',
+        value: presentMedia(media),
+        message: '手机页面图片已转换为 PNG 并安全保存，但静态网站生成失败；当前已发布版本未受影响。',
+      });
+    }
+  }));
+
   router.post('/media/:id/replace', upload.single('image'), asyncRoute(async (req, res) => {
     const current = service.getMedia(req.params.id);
     const absolutePath = path.join(config.uploadsDir, path.basename(current.stored_name));
     const previousBuffer = fs.readFileSync(absolutePath);
-    const replaced = replaceStoredImage(req.file, config.uploadsDir, current);
+    const usedByMobilePage = service.listPages().some(
+      (page) => page.template_type === 'image-only' && page.title_image === current.relative_path,
+    );
+    const replaced = usedByMobilePage
+      ? await replaceStoredMobilePageImage(req.file, config.uploadsDir, current)
+      : replaceStoredImage(req.file, config.uploadsDir, current);
     let media;
     try {
       media = service.updateMedia(current.id, {

@@ -2,7 +2,7 @@
 
 const path = require('node:path');
 
-const TEMPLATE_TYPES = Object.freeze(['home', 'card-list', 'content', 'link-list']);
+const TEMPLATE_TYPES = Object.freeze(['home', 'card-list', 'content', 'link-list', 'image-only']);
 const PAGE_STATUSES = Object.freeze(['draft', 'published', 'archived']);
 const CARD_STATUSES = Object.freeze(['draft', 'published', 'archived']);
 const CARD_ITEM_TYPES = Object.freeze(['image_card', 'text_link']);
@@ -240,9 +240,12 @@ function validatePageRecord(input) {
     });
   }
   if (status === 'published' && !titleImage) {
-    throw new ValidationError('发布页面必须设置预渲染标题图片', 'PAGE_TITLE_IMAGE_REQUIRED', {
-      field: 'title_image',
-    });
+    const imageOnly = templateType === 'image-only';
+    throw new ValidationError(
+      imageOnly ? '发布单张图片页必须先上传页面图片' : '发布页面必须设置预渲染标题图片',
+      imageOnly ? 'PAGE_IMAGE_REQUIRED' : 'PAGE_TITLE_IMAGE_REQUIRED',
+      { field: 'title_image' },
+    );
   }
 
   return {

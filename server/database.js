@@ -5,6 +5,7 @@ const path = require('node:path');
 const BetterSqlite3 = require('better-sqlite3');
 
 const DEFAULT_DATABASE_PATH = path.resolve(process.cwd(), 'data', 'site.db');
+const DATABASE_VERSION = 2;
 
 const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS site_settings (
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS pages (
   parent_id INTEGER REFERENCES pages(id) ON UPDATE CASCADE ON DELETE RESTRICT,
   title TEXT NOT NULL CHECK (length(trim(title)) > 0),
   slug TEXT NOT NULL,
-  template_type TEXT NOT NULL CHECK (template_type IN ('home', 'card-list', 'content', 'link-list')),
+  template_type TEXT NOT NULL CHECK (template_type IN ('home', 'card-list', 'content', 'link-list', 'image-only')),
   decorative_character TEXT NOT NULL DEFAULT '',
   title_image TEXT NOT NULL DEFAULT '',
   background_image TEXT NOT NULL DEFAULT '',
@@ -117,6 +118,28 @@ CREATE INDEX IF NOT EXISTS media_content_hash
   ON media(content_hash);
 `;
 
+const PAGES_V2_TABLE_SQL = `
+CREATE TABLE pages_v2 (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  parent_id INTEGER REFERENCES pages(id) ON UPDATE CASCADE ON DELETE RESTRICT,
+  title TEXT NOT NULL CHECK (length(trim(title)) > 0),
+  slug TEXT NOT NULL,
+  template_type TEXT NOT NULL CHECK (template_type IN ('home', 'card-list', 'content', 'link-list', 'image-only')),
+  decorative_character TEXT NOT NULL DEFAULT '',
+  title_image TEXT NOT NULL DEFAULT '',
+  background_image TEXT NOT NULL DEFAULT '',
+  content TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+  CHECK (
+    (template_type = 'home' AND parent_id IS NULL AND slug = '') OR
+    (template_type <> 'home' AND length(slug) > 0)
+  )
+);
+`;
+
 function resolveOpenArguments(filenameOrOptions, maybeOptions) {
   if (filenameOrOptions && typeof filenameOrOptions === 'object') {
     const options = { ...filenameOrOptions };
@@ -146,17 +169,58 @@ function configureDatabase(db, { readonly = false } = {}) {
   return db;
 }
 
+function pagesTableSupportsImageOnly(db) {
+  const row = db.prepare(`
+    SELECT sql FROM sqlite_master
+    WHERE type = 'table' AND name = 'pages'
+  `).get();
+  return Boolean(row?.sql?.includes("'image-only'"));
+}
+
+function migratePagesForImageOnlyTemplate(db) {
+  if (pagesTableSupportsImageOnly(db)) return false;
+
+  db.pragma('foreign_keys = OFF');
+  try {
+    db.transaction(() => {
+      db.exec('DROP TABLE IF EXISTS pages_v2');
+      db.exec(PAGES_V2_TABLE_SQL);
+      db.exec(`
+        INSERT INTO pages_v2 (
+          id, parent_id, title, slug, template_type, decorative_character,
+          title_image, background_image, content, sort_order, status,
+          created_at, updated_at
+        )
+        SELECT
+          id, parent_id, title, slug, template_type, decorative_character,
+          title_image, background_image, content, sort_order, status,
+          created_at, updated_at
+        FROM pages;
+        DROP TABLE pages;
+        ALTER TABLE pages_v2 RENAME TO pages;
+      `);
+      const foreignKeyIssues = db.pragma('foreign_key_check');
+      if (foreignKeyIssues.length > 0) {
+        throw new Error('数据库迁移后的外键检查失败。');
+      }
+    })();
+  } finally {
+    db.pragma('foreign_keys = ON');
+  }
+  return true;
+}
+
 function initializeSchema(db) {
-  const migrate = db.transaction(() => {
-    db.exec(SCHEMA_SQL);
-    db.prepare(`
-      INSERT INTO site_settings (id)
-      VALUES (1)
-      ON CONFLICT(id) DO NOTHING
-    `).run();
-    db.pragma('user_version = 1');
-  });
-  migrate();
+  const currentVersion = Number(db.pragma('user_version', { simple: true })) || 0;
+  db.exec(SCHEMA_SQL);
+  migratePagesForImageOnlyTemplate(db);
+  db.exec(SCHEMA_SQL);
+  db.prepare(`
+    INSERT INTO site_settings (id)
+    VALUES (1)
+    ON CONFLICT(id) DO NOTHING
+  `).run();
+  db.pragma(`user_version = ${Math.max(currentVersion, DATABASE_VERSION)}`);
   return db;
 }
 
@@ -200,11 +264,13 @@ function closeDatabase(db) {
 }
 
 module.exports = {
+  DATABASE_VERSION,
   DEFAULT_DATABASE_PATH,
   SCHEMA_SQL,
   closeDatabase,
   configureDatabase,
   createDatabase: openDatabase,
   initializeSchema,
+  migratePagesForImageOnlyTemplate,
   openDatabase,
 };

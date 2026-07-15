@@ -247,6 +247,9 @@ textarea { resize: vertical; min-height: 78px; }
 .draft-preview-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
 .draft-preview-cards img, .draft-preview-cards span { width: 100%; min-height: 72px; display: grid; place-items: center; border-radius: 8px; object-fit: contain; background: #fff; }
 .draft-preview-empty { margin-top: 72px; }
+.draft-preview-image-only { width: min(100%, 360px); min-height: 440px; margin: 0 auto; display: grid; place-items: start center; background: #fff; line-height: 0; }
+.draft-preview-image-only img { display: block; width: 100%; height: auto; }
+.draft-preview-image-only .draft-preview-empty { align-self: center; margin: 0; color: var(--muted); line-height: 1.6; }
 
 .image-choice-row { display: flex; align-items: stretch; gap: 10px; }
 .image-choice-row select { flex: 1; }
