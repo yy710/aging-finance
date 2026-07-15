@@ -204,9 +204,19 @@ textarea { resize: vertical; min-height: 78px; }
 
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .field { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
-.field > span { font-weight: 750; }
+.field > span, .field-label { font-weight: 750; }
 .field small { color: var(--muted); font-size: 11px; }
 .field-wide { grid-column: 1 / -1; }
+.field-toggle {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.field-toggle input { width: 16px; height: 16px; margin: 0; accent-color: var(--red); }
 .form-actions { min-height: 40px; flex-wrap: wrap; }
 .form-message { min-height: 1.4em; color: var(--green); }
 .form-message.error { color: var(--red); }

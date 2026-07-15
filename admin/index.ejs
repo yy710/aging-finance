@@ -191,12 +191,16 @@
               <input name="image_alt" maxlength="180">
               <small>请简要描述图片内容，方便使用读屏功能的访客理解。</small>
             </label>
-            <label class="field">
-              <span>点击后打开本站页面</span>
+            <div class="field">
+              <label class="field-label" for="card-target">设置点击链接</label>
               <select id="card-target" name="target_page_id"></select>
-            </label>
-            <label class="field">
-              <span>或打开其他网站</span>
+              <label class="field-toggle" for="card-target-children-only">
+                <input id="card-target-children-only" type="checkbox" checked>
+                <span>仅显示本页面的下级页面</span>
+              </label>
+            </div>
+            <label id="card-external-url-field" class="field" hidden>
+              <span>外部链接</span>
               <input name="external_url" type="url" placeholder="请粘贴完整网站地址">
             </label>
             <label class="field">

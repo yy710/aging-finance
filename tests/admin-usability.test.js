@@ -31,6 +31,11 @@ test('admin exposes friendly labels, a complete image library, and same-origin p
   assert.match(visibleText, /单张图片页/u);
   assert.match(visibleText, /上传手机页面图片/u);
   assert.match(visibleText, /最大 720px 宽.*PNG/u);
+  assert.match(visibleText, /设置点击链接/u);
+  assert.match(visibleText, /仅显示本页面的下级页面/u);
+  assert.match(admin.text, /id="card-target-children-only"[^>]+checked/u);
+  assert.match(admin.text, /id="card-external-url-field"[^>]+hidden/u);
+  assert.doesNotMatch(visibleText, /点击后打开本站页面|或打开其他网站/u);
   assert.doesNotMatch(visibleText, /页面展示方式/u);
   assert.match(
     admin.text,

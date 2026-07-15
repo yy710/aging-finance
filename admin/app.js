@@ -33,6 +33,10 @@
   const pageImageUploadTrigger = $('#page-image-upload-trigger');
   const pageImageUploadInput = $('#page-image-upload-input');
   const pageImageUploadHint = $('#page-image-upload-hint');
+  const cardTargetSelect = $('#card-target');
+  const cardTargetChildrenOnly = $('#card-target-children-only');
+  const cardExternalUrlField = $('#card-external-url-field');
+  const cardExternalUrlInput = cardForm.elements.external_url;
   const publicBasePath = $('meta[name="public-base-path"]')?.content || '';
   const pageTemplatesWithoutBody = new Set(
     String(contentField?.dataset.hiddenForTemplates || '').split(/\s+/u).filter(Boolean),
@@ -196,7 +200,37 @@
     const optionHtml = pages.map((item) => `<option value="${item.id}">${escapeHtml(pageDisplayName(item))}</option>`).join('');
     $('#page-parent').innerHTML = `<option value="">不设上级页面（仅首页使用）</option>${optionHtml}`;
     $('#page-parent').value = String(currentParent || '');
-    $('#card-target').innerHTML = `<option value="">不打开本站其他页面</option>${state.pages.map((item) => `<option value="${item.id}">${escapeHtml(pageDisplayName(item))}</option>`).join('')}`;
+    renderCardTargetOptions();
+  }
+
+  function syncCardLinkFields() {
+    const usesExternalUrl = cardTargetSelect.value === 'external';
+    cardExternalUrlField.hidden = !usesExternalUrl;
+    cardExternalUrlInput.disabled = !usesExternalUrl;
+    cardExternalUrlInput.required = usesExternalUrl;
+  }
+
+  function renderCardTargetOptions(selectedValue = cardTargetSelect.value) {
+    const selectedTargetId = /^\d+$/u.test(String(selectedValue)) ? Number(selectedValue) : null;
+    let pages = cardTargetChildrenOnly.checked
+      ? state.pages.filter((page) => page.parent_id === state.selectedPageId)
+      : state.pages;
+
+    if (selectedTargetId && !pages.some((page) => page.id === selectedTargetId)) {
+      const selectedPage = state.pages.find((page) => page.id === selectedTargetId);
+      if (selectedPage) pages = [...pages, selectedPage];
+    }
+
+    const pageOptions = pages.map((page) => (
+      `<option value="${page.id}">${escapeHtml(pageDisplayName(page))}</option>`
+    )).join('');
+    cardTargetSelect.innerHTML = [
+      '<option value="">不设置点击链接</option>',
+      pageOptions,
+      '<option value="external">打开外部链接</option>',
+    ].join('');
+    cardTargetSelect.value = String(selectedValue || '');
+    syncCardLinkFields();
   }
 
   function friendlyImageName(imageOrPath, index = 0) {
@@ -413,14 +447,18 @@
 
   function fillCardForm(card) {
     cardForm.reset();
+    cardTargetChildrenOnly.checked = true;
     const values = card || {
       id: '', item_type: 'image_card', title: '', description: '', image_path: '', image_alt: '',
       target_page_id: '', external_url: '', sort_order: state.cards.length * 10, status: 'draft',
     };
     for (const [key, value] of Object.entries(values)) {
+      if (key === 'target_page_id') continue;
       const field = cardForm.elements.namedItem(key);
       if (field) field.value = value ?? '';
     }
+    const targetValue = values.external_url ? 'external' : values.target_page_id;
+    renderCardTargetOptions(targetValue);
     renderImageSelectors();
     cardForm.hidden = false;
     setFormMessage('#card-form-message', '');
@@ -664,6 +702,10 @@
 
   $('#card-image').addEventListener('change', () => updateImageThumb('card-image'));
   $('#page-title-image').addEventListener('change', () => updateImageThumb('page-title-image'));
+  cardTargetSelect.addEventListener('change', syncCardLinkFields);
+  cardTargetChildrenOnly.addEventListener('change', () => {
+    renderCardTargetOptions(cardTargetSelect.value);
+  });
 
   cardForm.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -671,7 +713,9 @@
     submitButton.disabled = true;
     const data = Object.fromEntries(new FormData(cardForm));
     data.page_id = state.selectedPageId;
-    data.target_page_id = data.target_page_id ? Number(data.target_page_id) : null;
+    const targetSelection = data.target_page_id;
+    data.target_page_id = /^\d+$/u.test(targetSelection) ? Number(targetSelection) : null;
+    if (targetSelection !== 'external') data.external_url = '';
     data.sort_order = Number(data.sort_order || 0);
     const id = data.id;
     delete data.id;
