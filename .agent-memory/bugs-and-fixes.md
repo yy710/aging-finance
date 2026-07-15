@@ -34,4 +34,17 @@
 - Asset fix: `public-assets/images/global/back.jpg` is actually a 1216×1241 RGBA PNG despite its extension. It is normalized into the source-controlled `public-assets/images/global/back.png` at the legacy 92×93 dimensions, so clean generation can version and publish the gold return icon without relying on an old generated snapshot.
 - Verification: 16/16 tests, `/af` generation of 24 pages and 82 hashed assets, desktop and 430×932 browser checks, explicit text-page return navigation, and clean console.
 
+## Top-level “惠” page could not reliably return to home
+
+- Symptom: the shared return button used `history.back()` for same-origin visits, so browser history could send the “惠” page back to a child, preview, or unrelated page instead of its database parent.
+- Fix: remove browser-history interception and always follow the pre-rendered parent-page `href`; top-level sections now deterministically return to `/af/`.
+- Regression coverage: generated client JavaScript must not call `history.back()`/`history.go()`, top-level section HTML must link to `/`, and browser QA must exercise a child → “惠” → home chain.
+- Verification: 17/17 tests, `/af` generation of 24 pages and 83 hashed assets, and 430×932 browser navigation through tertiary page → classroom → “惠” → home with no broken images, overlays, warnings, or errors.
+
+## Fixed return overlay was covered by scrolling content
+
+- Symptom during QA: `position: fixed` preserved the button coordinates, but the button could render below classroom cards because `page-header` created a lower stacking context.
+- Fix: keep the button at z-index 30 and remove the header's independent stacking context with `z-index: auto`; wide-screen right positioning remains aligned to the centered 720px canvas.
+- Verification: mobile scroll from 0 to 356px and desktop scroll from 0 to 400px produced zero top/right coordinate drift, hit testing selected the return link, parent navigation worked, and console/image/overlay checks were clean.
+
 Provenance: source_agent=Codex; updated=2026-07-15.

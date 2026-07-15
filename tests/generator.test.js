@@ -179,6 +179,51 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
     /\.card-list--classroom\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/su,
     'mobile styles must not collapse the classroom card grid to one column',
   );
+  assert.match(
+    compiledCssText,
+    /\.card-list--classroom\s*\{[^}]*width:\s*72\.2222%/su,
+    'the classroom grid must keep the compact artwork width',
+  );
+  assert.match(
+    compiledCssText,
+    /\.visual-card__title\s*\{[^}]*font-family:\s*SimHei,[^}]*font-size:\s*clamp\(12px,\s*2\.7778vw,\s*20px\)/su,
+    'classroom entry titles must use the compact Heiti typography',
+  );
+  assert.match(
+    compiledCssText,
+    /\.back-button\s*\{[^}]*position:\s*fixed;[^}]*z-index:\s*30;/su,
+    'the shared return button must remain fixed above scrolling page content',
+  );
+  assert.match(
+    compiledCssText,
+    /\.back-button\s*\{[^}]*safe-area-inset-top[^}]*safe-area-inset-right[^}]*\+\s*16px/su,
+    'the fixed return button must stay close to the safe upper-right canvas edge',
+  );
+  assert.match(
+    compiledCssText,
+    /\.page-header\s*\{[^}]*z-index:\s*auto;/su,
+    'the page header must not trap the fixed return button below scrolling content',
+  );
+
+  const compiledScriptText = await fs.readFile(
+    path.join(outputDir, 'assets', 'js', 'site.js'),
+    'utf8',
+  );
+  assert.doesNotMatch(
+    compiledScriptText,
+    /history\.back|history\.go/u,
+    'return buttons must follow the explicit page-tree parent instead of browser history',
+  );
+
+  const sectionHtml = await fs.readFile(
+    path.join(outputDir, 'section', 'index.html'),
+    'utf8',
+  );
+  assert.match(
+    sectionHtml,
+    /class="back-button" href="\/"/u,
+    'a top-level section must return directly to the home page',
+  );
 
   const detailHtml = await fs.readFile(
     path.join(outputDir, 'section', 'detail', 'index.html'),
