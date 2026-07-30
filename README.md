@@ -340,6 +340,8 @@ test -f config/private.json || cp config/private.example.json config/private.jso
 chmod 600 config/private.json
 ```
 
+`package.json` 只批准固定版本 `better-sqlite3@12.11.1` 执行原生安装脚本；不要使用 `npm install-scripts approve --all`。安装后可用 `node -e "new (require('better-sqlite3'))(':memory:').close()"` 验证原生绑定。
+
 编辑并更换生产密码、Cookie 密钥，将 `secureCookies` 设为 `true`，然后：
 
 ```bash

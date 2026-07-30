@@ -27,6 +27,11 @@ test('production generation defaults are pinned to the /af deployment path', asy
   );
   assert.equal(packageJson.scripts.generate, 'node scripts/generate.js --public-base-path /af');
   assert.equal(packageJson.scripts['generate:root'], 'node scripts/generate.js');
+  assert.equal(
+    packageJson.allowScripts['better-sqlite3@12.11.1'],
+    true,
+    'production installs must allow the pinned SQLite native binding build',
+  );
 
   const privateConfig = {
     adminPassword: TEST_PASSWORD,

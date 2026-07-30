@@ -30,6 +30,8 @@ pm2 start ecosystem.config.cjs
 curl http://127.0.0.1:3100/health
 ```
 
+`package.json` pins install-script approval to `better-sqlite3@12.11.1`; do not approve all dependency scripts. After installation, verify the native binding with `node -e "new (require('better-sqlite3'))(':memory:').close()"`.
+
 ## Git mirror
 
 ```bash

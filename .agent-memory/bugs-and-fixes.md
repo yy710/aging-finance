@@ -55,4 +55,11 @@
 - Admin visibility: publication responses and the success message now report the public path used for the snapshot.
 - Verification: 18/18 tests, both root and `/af` command paths, 24 pages and 83 assets, production-style browser rendering at 1280×800 and 378×834, zero failed images or console warnings/errors, and `/af/` → `/af/hui/` navigation.
 
+## Production install blocked the SQLite native binding
+
+- Symptom: npm reported a successful dependency install, but PM2 entered an unstable restart loop and `better-sqlite3` could not locate `node-v137-linux-x64/better_sqlite3.node`.
+- Cause: npm's `allowScripts` policy blocked the pinned `better-sqlite3@12.11.1` install script even though `ignore-scripts=false`.
+- Fix: approve only `better-sqlite3@12.11.1` in the repository `package.json`; never use a blanket install-script approval.
+- Related cache repair: the canonical V2 tagline hash had been cached with the old 398×46 response. Re-encode the supplied 527×278 pixels losslessly so publication emits a fresh content hash and bypasses the poisoned immutable cache entry.
+
 Provenance: source_agent=Codex; updated=2026-07-30.
