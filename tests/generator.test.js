@@ -141,6 +141,7 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   const cssKey = '/assets/css/site.css';
   const middleKey = '/assets/images/decor/hui-middle.png';
   const homeBottomKey = '/assets/images/decor/home-bottom.png';
+  const taglineKey = '/assets/images/home/tagline.png';
   const backKey = '/assets/images/global/back.png';
   const scriptKey = '/assets/js/site.js';
   const firstHome = await fs.readFile(path.join(outputDir, 'index.html'), 'utf8');
@@ -155,6 +156,16 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   assert.match(
     firstHome,
     new RegExp(`/assets/images/decor/home-bottom\\.png\\?v=${first.manifest[homeBottomKey]}`),
+  );
+  assert.match(
+    firstHome,
+    new RegExp(`/assets/images/home/tagline\\.png\\?v=${first.manifest[taglineKey]}`),
+    'the V2 home tagline must be versioned through the publication manifest',
+  );
+  assert.match(
+    firstHome,
+    /class="home-hero__tagline"[^>]+width="527" height="278"/u,
+    'the V2 home tagline must publish its intrinsic dimensions',
   );
   assert.match(firstHome, /class="page-background__bottom"[^>]+width="720" height="504"/u);
   assert.doesNotMatch(firstHome, /site-footer__scene/u);
@@ -203,6 +214,26 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
     compiledCssText,
     /\.page-header\s*\{[^}]*z-index:\s*auto;/su,
     'the page header must not trap the fixed return button below scrolling content',
+  );
+  assert.match(
+    compiledCssText,
+    /\.home-hero__tagline\s*\{[^}]*width:\s*73\.1944%;[^}]*margin-top:\s*min\(9\.4444vw,\s*68px\);[^}]*margin-left:\s*15\.2778%;/su,
+    'the V2 home tagline must match its 527px width and 110px left offset',
+  );
+  assert.match(
+    compiledCssText,
+    /\.home-entry-nav\s*\{[^}]*margin-top:\s*min\(11\.1111vw,\s*80px\);/su,
+    'the V2 home entries must begin 80px below the expanded tagline',
+  );
+  assert.match(
+    compiledCssText,
+    /\.home-entry-grid\s*\{[^}]*width:\s*81\.1111%;[^}]*margin:\s*0 0 0 9\.4444%;/su,
+    'the V2 home entry grid must use the 68px reference left offset',
+  );
+  assert.match(
+    compiledCssText,
+    /\.theme-home\s*\{[^}]*--footer-scene-height:\s*min\(35\.6944vw,\s*257px\);/su,
+    'the V2 home page must preserve the 1560px reference height after moving the entries',
   );
 
   const compiledScriptText = await fs.readFile(

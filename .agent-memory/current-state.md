@@ -15,4 +15,11 @@
 - Current public-page fixes, tests, documentation, and memory updates were committed as `1566659`.
 - Classroom compaction, deterministic page-tree return navigation, and the safe-area-aware fixed return overlay were committed as `2dd9049`.
 - Verification for `2dd9049`: `npm test` passed 17/17 and `/af` generation produced 24 pages with 83 hashed assets. Browser QA covered 430×932 and 1280×800 classroom typography, tertiary page → classroom → “惠” → home navigation, approximately 9.6px mobile and 16px desktop upper-edge positioning, zero coordinate drift after 356px/400px scrolling, correct hit testing, and clean console/image/overlay state.
+- Date: 2026-07-30
+- Source agent: Codex
+- Active homepage branch: `codex/home-v2`.
+- Homepage welcome-modal changes were removed in `ba8da4a` without rewriting `develop`; the root `resources/` directory remains ignored and is not tracked.
+- Homepage V2 keeps the public URL `/assets/images/home/tagline.png`, replaces that asset with the supplied 527×278 composition, and aligns the 720×1560 canvas to the approved design: composition at `(110, 624)`, first-row entries at `(68, 982)`, `(288, 982)`, `(507, 982)`, and second-row entries at `(183, 1153)`, `(400, 1153)`.
+- Homepage V2 browser verification covered a native 720×1560 canvas, 378×834 mobile, and 1280×800 desktop. The five entries moved down approximately 118px without overlap, clipping, or horizontal overflow; a “惠” entry navigation check passed; all images loaded and the console had no warnings or errors.
+- Homepage V2 verification baseline: `git diff --check`, `node --check public-assets/js/site.js`, `npm test` (17/17), and `PUBLIC_BASE_PATH=/af npm run generate` (24 pages, 83 hashed assets) passed.
 - Secrets: none recorded. Gitee credentials and local admin credentials must remain outside the repository.
