@@ -141,7 +141,6 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   const cssKey = '/assets/css/site.css';
   const middleKey = '/assets/images/decor/hui-middle.png';
   const homeBottomKey = '/assets/images/decor/home-bottom.png';
-  const welcomeModalKey = '/assets/images/home/welcome-modal.png';
   const backKey = '/assets/images/global/back.png';
   const scriptKey = '/assets/js/site.js';
   const firstHome = await fs.readFile(path.join(outputDir, 'index.html'), 'utf8');
@@ -159,16 +158,6 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   );
   assert.match(firstHome, /class="page-background__bottom"[^>]+width="720" height="504"/u);
   assert.doesNotMatch(firstHome, /site-footer__scene/u);
-  assert.match(
-    firstHome,
-    /class="home-welcome"[\s\S]+data-home-welcome-modal[\s\S]+data-home-welcome-dismiss/u,
-    'the home page must render an automatically visible dismissible welcome image',
-  );
-  assert.match(
-    firstHome,
-    new RegExp(`/assets/images/home/welcome-modal\\.png\\?v=${first.manifest[welcomeModalKey]}`),
-    'the home welcome image must be versioned through the publication manifest',
-  );
 
   const compiledCssPath = path.join(outputDir, 'assets', 'css', 'site.css');
   const compiledCss = await fs.readFile(compiledCssPath);
@@ -215,21 +204,6 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
     /\.page-header\s*\{[^}]*z-index:\s*auto;/su,
     'the page header must not trap the fixed return button below scrolling content',
   );
-  assert.match(
-    compiledCssText,
-    /\.home-welcome__dismiss\s*\{[^}]*width:\s*min\(92vw,\s*662px\)/su,
-    'the home welcome image must match the reference width on mobile and desktop',
-  );
-  assert.match(
-    compiledCssText,
-    /\.home-welcome__dismiss\s*\{[^}]*home-welcome-card-in\s+1200ms/su,
-    'the home welcome image must use a deliberately visible entrance duration',
-  );
-  assert.match(
-    compiledCssText,
-    /@keyframes home-welcome-card-in[\s\S]+scale\(0\.35\)[\s\S]+scale\(0\.58\)[\s\S]+scale\(1\.08\)[\s\S]+scale\(1\)[\s\S]+@keyframes home-welcome-card-out/u,
-    'the home welcome image must visibly grow, overshoot, and settle',
-  );
 
   const compiledScriptText = await fs.readFile(
     path.join(outputDir, 'assets', 'js', 'site.js'),
@@ -239,16 +213,6 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
     compiledScriptText,
     /history\.back|history\.go/u,
     'return buttons must follow the explicit page-tree parent instead of browser history',
-  );
-  assert.match(
-    compiledScriptText,
-    /dismiss\.addEventListener\('click', close\)/u,
-    'clicking anywhere on the welcome image must start the close interaction',
-  );
-  assert.match(
-    compiledScriptText,
-    /modal\.hidden = true/u,
-    'the welcome image must be removed from interaction after its exit animation',
   );
 
   const sectionHtml = await fs.readFile(
