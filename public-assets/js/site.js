@@ -9,7 +9,7 @@ document.addEventListener('click', (event) => {
   }
 });
 
-const HOME_WELCOME_CLOSE_DURATION = 320;
+const HOME_WELCOME_CLOSE_DURATION = 440;
 
 function initializeHomeWelcome(modal) {
   const dismiss = modal.querySelector('[data-home-welcome-dismiss]');

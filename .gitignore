@@ -4,6 +4,7 @@ data/*.db-*
 uploads/*
 !uploads/.gitkeep
 public-generated/
+resources/
 logs/
 config/private.json
 .DS_Store

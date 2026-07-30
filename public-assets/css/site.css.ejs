@@ -479,7 +479,7 @@ body.template-image-only {
     max(10px, env(safe-area-inset-left));
   overflow: hidden;
   background: rgba(53, 27, 7, 0.03);
-  animation: home-welcome-backdrop-in 360ms ease-out both;
+  animation: home-welcome-backdrop-in 700ms ease-out both;
   place-items: center;
 }
 
@@ -499,7 +499,7 @@ body.template-image-only {
   box-shadow: 0 12px 34px rgba(76, 31, 8, 0.16);
   line-height: 0;
   transform-origin: center;
-  animation: home-welcome-card-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: home-welcome-card-in 1200ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
 
 .home-welcome__dismiss:focus-visible {
@@ -517,11 +517,11 @@ body.template-image-only {
 
 .home-welcome.is-closing {
   pointer-events: none;
-  animation: home-welcome-backdrop-out 280ms ease-in both;
+  animation: home-welcome-backdrop-out 360ms ease-in both;
 }
 
 .home-welcome.is-closing .home-welcome__dismiss {
-  animation: home-welcome-card-out 280ms ease-in both;
+  animation: home-welcome-card-out 380ms ease-in both;
 }
 
 body.home-welcome-open {
@@ -534,11 +534,25 @@ body.home-welcome-open {
 }
 
 @keyframes home-welcome-card-in {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(calc(var(--home-welcome-offset) + 24px)) scale(0.94);
+    transform: translateY(calc(var(--home-welcome-offset) + 32px)) scale(0.35);
   }
-  to {
+  24% {
+    opacity: 1;
+    transform: translateY(calc(var(--home-welcome-offset) + 18px)) scale(0.58);
+  }
+  62% {
+    opacity: 1;
+    transform: translateY(calc(var(--home-welcome-offset) - 5px)) scale(1.08);
+  }
+  78% {
+    transform: translateY(calc(var(--home-welcome-offset) + 2px)) scale(0.985);
+  }
+  90% {
+    transform: translateY(calc(var(--home-welcome-offset) - 1px)) scale(1.025);
+  }
+  100% {
     opacity: 1;
     transform: translateY(var(--home-welcome-offset)) scale(1);
   }

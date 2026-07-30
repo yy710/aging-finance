@@ -21,8 +21,10 @@
 
 - Source agent: Codex.
 - Status: implemented and verified; included in the homepage welcome-modal delivery.
-- The home page now automatically displays `public-assets/images/home/welcome-modal.png`. The whole image is a dismiss control, with a 520ms entrance animation and a 280ms exit animation; reduced-motion users get an effectively immediate transition.
+- The home page now automatically displays `public-assets/images/home/welcome-modal.png`. The whole image is a dismiss control. A 2026-07-30 follow-up slows the entrance to 1200ms and makes the image grow from 35% through a 108% overshoot before settling at full size; the exit lasts 380ms. Reduced-motion users get an effectively immediate transition.
 - Reference fidelity at a 378×834 viewport: the settled modal measured 347.8×280.8px at top 310px and left 15.1px, matching `resources/首页弹窗设计图.png`.
 - Browser QA verified automatic display, scroll locking while open, click-to-close after the exit animation, restored scrolling afterward, desktop fit at 1280×800, loaded imagery, meaningful DOM content, and no console warnings or errors.
+- Follow-up animation QA measured the image at about 55.7% scale during the early pop phase, then confirmed the original 347.8×280.8px mobile and 662×534.5px desktop settled sizes, successful click dismissal, and clean console output.
+- The repository root `resources/` directory is intentionally ignored; supplied design references stay local and are not included in commits or remote pushes.
 - Verification baseline: `git diff --check`, `node --check public-assets/js/site.js`, and `npm test` passed (17/17). `PUBLIC_BASE_PATH=/af npm run generate` produced 24 pages and 84 hashed assets.
 - Secrets: none recorded.

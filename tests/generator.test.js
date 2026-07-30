@@ -222,8 +222,13 @@ test('generator versions HTML/CSS assets stably, updates replacements, and rolls
   );
   assert.match(
     compiledCssText,
-    /@keyframes home-welcome-card-in[\s\S]+@keyframes home-welcome-card-out/u,
-    'the home welcome image must animate both entering and leaving',
+    /\.home-welcome__dismiss\s*\{[^}]*home-welcome-card-in\s+1200ms/su,
+    'the home welcome image must use a deliberately visible entrance duration',
+  );
+  assert.match(
+    compiledCssText,
+    /@keyframes home-welcome-card-in[\s\S]+scale\(0\.35\)[\s\S]+scale\(0\.58\)[\s\S]+scale\(1\.08\)[\s\S]+scale\(1\)[\s\S]+@keyframes home-welcome-card-out/u,
+    'the home welcome image must visibly grow, overshoot, and settle',
   );
 
   const compiledScriptText = await fs.readFile(
