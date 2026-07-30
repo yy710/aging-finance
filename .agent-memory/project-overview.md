@@ -11,7 +11,9 @@
 - 单张图片页自动按 EXIF 方向旋转、最大 720px 等比缩放、去元数据并转 PNG。
 - 单密码登录、签名 HttpOnly Cookie、API 鉴权、上传签名校验和生成目录安全边界。
 - PM2 单进程部署，Nginx 对外路径为 `/af/`。
+- 生产 `npm run generate` 固定输出 `/af` URL；无前缀的本地直连快照使用 `npm run generate:root`。
+- 原生 SQLite 依赖只允许固定版本 `better-sqlite3@12.11.1` 执行安装脚本，并要求安装后执行真实查询 smoke test。
 
-仓库使用 `develop` 作为当前开发分支，并同步到 GitHub `origin` 与 Gitee `gitee`。
+仓库使用 `develop` 作为长期开发分支，并同步到 GitHub `origin` 与 Gitee `gitee`；首页 V2 发布修复线位于 `home-v2`。
 
-Provenance: source_agent=Codex; updated=2026-07-15; commits=96d17fd,9d08bb7.
+Provenance: source_agent=Codex; updated=2026-07-30; commits=96d17fd,9d08bb7,3488bd2,07947c7,c41867b.

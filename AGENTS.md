@@ -136,6 +136,9 @@ This structure ensures:
 - Never store remote passwords, access tokens, the admin password, or the Cookie secret in documentation, Git remotes, commits, logs, or shared memory.
 - Public pages are generated artifacts. Do not hand-edit `public-generated/`; change SQLite content, EJS templates, admin code, or source assets and regenerate.
 - Production is served under `/af`; local direct Express testing normally uses `/admin/` and `/api/` because Nginx strips `/af` before proxying.
-- Before closing code changes, run `git diff --check` and `npm test`. For generated-site changes, also run `PUBLIC_BASE_PATH=/af npm run generate`.
+- `npm run generate` is the production `/af` build; use `npm run generate:root` only for direct local Express testing without the Nginx prefix.
+- Production dependency installation must retain the pinned `allowScripts` approval for `better-sqlite3@12.11.1`; never approve all install scripts. After `npm ci`, verify the native module with a real in-memory SQLite query before restarting PM2.
+- Before closing code changes, run `git diff --check` and `npm test`. For generated-site changes, also run `npm run generate`.
 - For rendered admin changes, verify the target interaction in a browser and check console warnings/errors.
 - Update `.agent-memory/current-state.md` with the verified commit and test baseline after durable changes.
+- For `/af` publication, PM2 502, native binding, or stale immutable-asset failures, follow `docs/home-v2-production-repair-2026-07-30.md`.

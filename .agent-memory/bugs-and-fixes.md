@@ -54,6 +54,7 @@
 - Fix: make `npm run generate` explicitly pass `--public-base-path /af`, retain `npm run generate:root` for direct local Express use, and default production runtime configuration to `/af` unless an explicit override is supplied.
 - Admin visibility: publication responses and the success message now report the public path used for the snapshot.
 - Verification: 18/18 tests, both root and `/af` command paths, 24 pages and 83 assets, production-style browser rendering at 1280×800 and 378×834, zero failed images or console warnings/errors, and `/af/` → `/af/hui/` navigation.
+- Verified commit: `07947c7`.
 
 ## Production install blocked the SQLite native binding
 
@@ -61,5 +62,7 @@
 - Cause: npm's `allowScripts` policy blocked the pinned `better-sqlite3@12.11.1` install script even though `ignore-scripts=false`.
 - Fix: approve only `better-sqlite3@12.11.1` in the repository `package.json`; never use a blanket install-script approval.
 - Related cache repair: the canonical V2 tagline hash had been cached with the old 398×46 response. Re-encode the supplied 527×278 pixels losslessly so publication emits a fresh content hash and bypasses the poisoned immutable cache entry.
+- Diagnostic rule: `ignore-scripts=false` does not override `allowScripts`; npm's rebuild summary is insufficient unless a real `better-sqlite3` query succeeds.
+- Verified commit: `c41867b`. Full evidence and recovery procedure: `docs/home-v2-production-repair-2026-07-30.md`.
 
 Provenance: source_agent=Codex; updated=2026-07-30.

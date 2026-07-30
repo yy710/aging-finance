@@ -17,15 +17,16 @@
 - Verification for `2dd9049`: `npm test` passed 17/17 and `/af` generation produced 24 pages with 83 hashed assets. Browser QA covered 430×932 and 1280×800 classroom typography, tertiary page → classroom → “惠” → home navigation, approximately 9.6px mobile and 16px desktop upper-edge positioning, zero coordinate drift after 356px/400px scrolling, correct hit testing, and clean console/image/overlay state.
 - Date: 2026-07-30
 - Source agent: Codex
-- Active homepage branch: `codex/home-v2`.
+- Active homepage branch: `home-v2`.
 - Homepage welcome-modal changes were removed in `ba8da4a` without rewriting `develop`; the root `resources/` directory remains ignored and is not tracked.
 - Homepage V2 keeps the public URL `/assets/images/home/tagline.png`, replaces that asset with the supplied 527×278 composition, and aligns the 720×1560 canvas to the approved design: composition at `(110, 624)`, first-row entries at `(68, 982)`, `(288, 982)`, `(507, 982)`, and second-row entries at `(183, 1153)`, `(400, 1153)`.
 - Homepage V2 browser verification covered a native 720×1560 canvas, 378×834 mobile, and 1280×800 desktop. The five entries moved down approximately 118px without overlap, clipping, or horizontal overflow; a “惠” entry navigation check passed; all images loaded and the console had no warnings or errors.
-- Homepage V2 verification baseline: `git diff --check`, `node --check public-assets/js/site.js`, `npm test` (17/17), and `PUBLIC_BASE_PATH=/af npm run generate` (24 pages, 83 hashed assets) passed.
+- Homepage V2 verification baseline: `git diff --check`, `node --check public-assets/js/site.js`, `npm test` (17/17), and `npm run generate` (24 pages, 83 hashed assets) passed.
 - Date: 2026-07-30
 - Source agent: Codex
 - Publication-path repair on `home-v2`: plain `npm run generate` now pins the production `/af` base path, while `npm run generate:root` remains available for direct local Express testing. Production runtime configuration also defaults to `/af`, and admin publication feedback reports the generated public path.
 - Verification baseline: `git diff --check`, JavaScript syntax checks, `npm test` (18/18), `npm run generate:root`, and `npm run generate` passed. The production command generated 24 pages and 83 hashed assets with `/af`-prefixed CSS/image URLs and retained the Homepage V2 CSS and 527×278 tagline.
 - Browser QA served the production snapshot under `/af` at 1280×800 and 378×834: all 11 homepage images loaded, the V2 layout rendered correctly, there was no horizontal overflow or console warning/error, and the “惠” entry navigated from `/af/` to `/af/hui/`.
 - Live production diagnosis on 2026-07-30 found two deployment-specific failures: npm blocked the `better-sqlite3@12.11.1` native install script through `allowScripts`, causing PM2/502 failures; after recovery, the canonical tagline URL still returned an immutable cached 398×46 old image while a cache-probe URL returned the correct 527×278 V2 source. The repository now pins the single required install-script approval and republishes pixel-identical tagline content under a fresh hash.
+- Production repair commit `c41867b` is mirrored to `origin/home-v2` and `gitee/home-v2`; it pins the SQLite install-script approval and publishes the pixel-identical V2 tagline under hash `da7b742696`. Detailed recovery knowledge is consolidated in `docs/home-v2-production-repair-2026-07-30.md`, with README, AGENTS/CLAUDE, architecture, decisions, bugs, commands, and shared state synchronized on 2026-07-30.
 - Secrets: none recorded. Gitee credentials and local admin credentials must remain outside the repository.

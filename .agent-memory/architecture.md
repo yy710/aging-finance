@@ -29,6 +29,13 @@
 
 ## 子路径
 
-生产外部地址使用 `/af`。Nginx 删除该前缀后把请求代理到 Express 的内部 `/admin/`、`/api/`、`/health` 和静态路径；`PUBLIC_BASE_PATH=/af` 用于生成公开 URL、跳转和 Cookie Path。
+生产外部地址使用 `/af`。Nginx 删除该前缀后把请求代理到 Express 的内部 `/admin/`、`/api/`、`/health` 和静态路径；`PUBLIC_BASE_PATH=/af` 用于生成公开 URL、跳转和 Cookie Path。`npm run generate` 显式传入 `/af`，`npm run generate:root` 只用于无 Nginx 前缀的本地直连。
 
-Provenance: source_agent=Codex; updated=2026-07-15; refs=server/,admin/,views/,database_version=3.
+## 发布依赖与缓存
+
+- `better-sqlite3` 是启动和发布阶段的原生依赖；`package.json` 的 `allowScripts` 只批准固定版本 `better-sqlite3@12.11.1`，安装后必须执行内存数据库查询 smoke test。
+- 资源 URL 使用 SHA-256 内容哈希和长期 `immutable` 缓存。哈希必须对应真实响应字节；若某个版本 URL 已绑定错误内容，应发布新哈希，不能依赖覆盖同一路径。
+- 后台“发布全部更改”和命令行生成共用同一生成器，生产结果必须报告或验证 `publicBasePath=/af`。
+- 完整生产故障处理流程见 `docs/home-v2-production-repair-2026-07-30.md`。
+
+Provenance: source_agent=Codex; updated=2026-07-30; refs=server/,admin/,views/,package.json,database_version=3.

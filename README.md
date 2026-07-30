@@ -2,6 +2,10 @@
 
 这是一个移动端优先的养老金融主题展示网站，并附带单密码管理后台。管理员在后台维护页面、Card、文字链接和图片；数据先写入 SQLite，再由 EJS 完整生成静态 HTML。公开访问只读取 `public-generated/`，不会在访客请求时查询 SQLite，也不会动态执行 EJS。
 
+## 运维专题
+
+- [首页 V2 生产发布故障复盘与恢复手册](docs/home-v2-production-repair-2026-07-30.md)：覆盖 `/af` 路径、后台发布、`better-sqlite3` 原生绑定、PM2 502、不可变图片缓存、标准部署和验证流程。
+
 ## 技术与运行环境
 
 - Node.js 受支持的 LTS 版本；项目要求 `>= 22.17.0`
@@ -563,14 +567,25 @@ chmod 600 config/private.json
 
 ### `better-sqlite3` 安装或 ABI 错误
 
-确认使用受支持的 Node LTS，并在该 Node 版本下重新执行：
+如果 PM2 反复重启、外部返回 502，并出现 `Could not locate the bindings file`，先确认使用受支持的 Node 版本，再检查 npm 是否拦截原生安装脚本：
 
 ```bash
 node --version
-npm ci
+npm install-scripts ls
+npm ci --omit=dev
+node -e "const Database=require('better-sqlite3'); const db=new Database(':memory:'); console.log(db.prepare('select 1 AS ok').get()); db.close();"
 ```
 
-不要把其他 Node 主版本下生成的 `node_modules` 直接复制到服务器。
+仓库已在 `package.json` 中只批准固定版本 `better-sqlite3@12.11.1`。不要使用 `npm install-scripts approve --all`，也不要只根据 `npm rebuild` 的成功摘要判断安装完成；上面的模块 smoke test 必须实际通过。
+
+如果需要从源码构建：
+
+```bash
+dnf install -y gcc gcc-c++ make python3 python3-devel
+npm rebuild better-sqlite3 --build-from-source --foreground-scripts
+```
+
+不要把其他 Node 主版本或其他系统生成的 `node_modules` 复制到服务器。完整排查见[首页 V2 生产发布故障复盘与恢复手册](docs/home-v2-production-repair-2026-07-30.md)。
 
 ### 数据库不存在或没有页面
 
@@ -623,8 +638,12 @@ npm run generate
 
 1. 查看生成 HTML 中图片 URL 的 `?v=` 是否已经变化。
 2. 查看 `public-generated/asset-manifest.json` 中对应路径的哈希。
-3. 确认 Nginx/CDN 缓存键保留 `v` 参数。
-4. 如果修改过 CDN 规则，刷新对应资源缓存。
+3. 对比 HTML 尺寸和浏览器中图片的 `naturalWidth`/`naturalHeight`。
+4. 用 `curl` 下载固定 URL，检查真实文件尺寸和 SHA-256。
+5. 确认 Nginx/CDN 缓存键保留完整查询参数。
+6. 如果某个 `immutable` URL 已经缓存错误内容，不要继续覆盖同一个版本 URL；发布新内容哈希并刷新对应缓存。
+
+首页 V2 曾出现固定 `d14ae04315` URL 返回旧 398×46 图片、缓存探针却返回正确 527×278 图片的情况；最终通过逐像素一致的无损重编码发布新哈希 `da7b742696`。详见[故障复盘](docs/home-v2-production-repair-2026-07-30.md)。
 
 ### SQLite 锁或写入冲突
 

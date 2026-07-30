@@ -19,5 +19,9 @@
 - The entry target selector defaults to direct children of the current page; users may disable the filter to see all pages. Existing targets outside the filter must remain selectable while editing.
 - `develop` remains tracked against GitHub `origin/develop`; Gitee is a mirror remote, not the default upstream.
 - Credentials are never embedded in remote URLs or shared memory.
+- Production static generation is explicit and safe by default: `npm run generate` publishes `/af` URLs; root-prefix generation requires the deliberately named `npm run generate:root`.
+- Dependency install scripts are deny-by-default under current npm behavior; only the reviewed, pinned `better-sqlite3@12.11.1` native install script is approved in `package.json`. Blanket approvals are forbidden.
+- A native dependency installation is not accepted based on npm's summary alone; a real `better-sqlite3` in-memory query must pass before PM2 is restarted.
+- Immutable asset URLs are content contracts. If an HTTP cache serves bytes that do not match the version hash, publish a new content hash rather than reusing or overwriting the poisoned URL.
 
-Provenance: source_agent=Codex; updated=2026-07-15; commits=c2084ad,96d17fd,9d08bb7,1566659,3679a65; pending=classroom compaction, deterministic return navigation, and fixed return overlay.
+Provenance: source_agent=Codex; updated=2026-07-30; commits=c2084ad,96d17fd,9d08bb7,1566659,3679a65,07947c7,c41867b.

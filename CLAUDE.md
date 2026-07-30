@@ -76,7 +76,7 @@ This file instructs Claude Code on how to properly interact with the project's s
 - Commit `.agent-memory/` files regularly to version control to preserve history and allow team review.
 - Periodically prune `current-state.md` to avoid accumulation of outdated or irrelevant notes.
 
-For this repository, also follow the project-specific rules in `AGENTS.md`, especially the `develop` branch, GitHub/Gitee mirror, `/af` proxy boundary, generated-output boundary, secret-handling rules, and verification commands.
+For this repository, also follow the project-specific rules in `AGENTS.md`, especially the `develop` branch, GitHub/Gitee mirror, `/af` proxy boundary, generated-output boundary, pinned native install-script approval, secret-handling rules, and verification commands. For production publication or 502/cache incidents, read `docs/home-v2-production-repair-2026-07-30.md`.
 
 ---
 
