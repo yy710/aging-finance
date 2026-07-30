@@ -9,7 +9,8 @@
   },
   "scripts": {
     "init-db": "node scripts/init-db.js",
-    "generate": "node scripts/generate.js",
+    "generate": "node scripts/generate.js --public-base-path /af",
+    "generate:root": "node scripts/generate.js",
     "dev": "node --watch server/index.js",
     "start": "node server/index.js",
     "test": "node --test --test-concurrency=1",

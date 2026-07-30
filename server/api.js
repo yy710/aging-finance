@@ -112,6 +112,7 @@ function publicationDetails(result) {
     pageCount: result?.pageCount,
     cardCount: result?.cardCount,
     assetCount: result?.assetCount,
+    publicBasePath: result?.publicBasePath || '',
     urls: result?.urls,
     cleanupWarning: result?.cleanupWarning || null,
   };

@@ -95,14 +95,16 @@ npm run init-db -- --db /absolute/path/to/site.db
 
 ### 4. 生成公开静态网站
 
+生产站点固定部署在 `https://www.all2key.cn/af/`，默认生成命令已安全固定该公开路径：
+
 ```bash
 npm run generate
 ```
 
-本地开发默认不使用路径前缀。生产站点部署在 `https://www.all2key.cn/af/`，生成时必须使用与运行服务相同的环境变量：
+仅在本机直接访问 Express 根路径、没有 Nginx `/af` 重写时，使用：
 
 ```bash
-PUBLIC_BASE_PATH=/af npm run generate
+npm run generate:root
 ```
 
 生成结果位于 `public-generated/`。生成器会先在同级临时目录完成全部页面和资源，全部成功后再进行目录级切换；如果生成失败，会回滚并保留当前版本。输出目录内的 `.aging-finance-generated` 是所有权标记，不要删除。
@@ -342,7 +344,7 @@ chmod 600 config/private.json
 
 ```bash
 npm run init-db
-PUBLIC_BASE_PATH=/af npm run generate
+npm run generate
 mkdir -p logs
 APP_ROOT=/www/wwwroot/www.all2key.cn/aging-finance pm2 start ecosystem.config.cjs
 pm2 save
@@ -379,7 +381,7 @@ npm install --global pm2
 ```bash
 cd /www/wwwroot/www.all2key.cn/aging-finance
 npm ci --omit=dev
-PUBLIC_BASE_PATH=/af npm run generate
+npm run generate
 pm2 restart aging-finance --update-env
 ```
 
@@ -390,7 +392,7 @@ pm2 restart aging-finance --update-env
 ### 部署步骤
 
 1. 将项目部署到 `/www/wwwroot/www.all2key.cn/aging-finance`，或通过 `APP_ROOT` 指定实际绝对路径。
-2. 按上一节安装依赖、配置私密文件、初始化数据库，并用 `PUBLIC_BASE_PATH=/af` 生成静态站和启动 PM2。
+2. 按上一节安装依赖、配置私密文件、初始化数据库，并用默认的 `/af` 公开路径生成静态站和启动 PM2。
 3. 把 `deploy/nginx-subpath.conf.example` 中的两个 `location` 合并进 `www.all2key.cn` 已有的 HTTPS `server` 块，不要覆盖主站原有的 `/` 规则。
 4. 保留 `proxy_pass http://127.0.0.1:3100/;` 末尾的斜杠；它负责把外部 `/af/` 删除后再转发给 Express。
 5. 检查配置并重载 Nginx：
@@ -472,7 +474,7 @@ tar -C "$APP_ROOT" -xzf "$BACKUP_ROOT/uploads.tar.gz"
 install -m 600 "$BACKUP_ROOT/private.json" "$APP_ROOT/config/private.json"
 
 cd "$APP_ROOT"
-PUBLIC_BASE_PATH=/af npm run generate
+npm run generate
 pm2 start aging-finance
 curl http://127.0.0.1:3100/health
 ```

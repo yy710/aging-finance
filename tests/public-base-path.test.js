@@ -7,6 +7,7 @@ const test = require('node:test');
 const request = require('supertest');
 
 const { COOKIE_NAME } = require('../server/auth');
+const { loadConfig } = require('../server/config');
 const {
   cookiePathForBase,
   createPageUrl,
@@ -14,7 +15,30 @@ const {
   normalizePublicBasePath,
   stripPublicBasePath,
 } = require('../server/public-url');
+const { parseArguments } = require('../scripts/generate');
 const { TEST_PASSWORD, createTestRuntime, readManifest } = require('./helpers/runtime');
+
+test('production generation defaults are pinned to the /af deployment path', async () => {
+  const args = parseArguments(['--public-base-path', '/af']);
+  assert.equal(args.publicBasePath, '/af');
+
+  const packageJson = JSON.parse(
+    await fs.readFile(path.resolve(__dirname, '..', 'package.json'), 'utf8'),
+  );
+  assert.equal(packageJson.scripts.generate, 'node scripts/generate.js --public-base-path /af');
+  assert.equal(packageJson.scripts['generate:root'], 'node scripts/generate.js');
+
+  const privateConfig = {
+    adminPassword: TEST_PASSWORD,
+    cookieSecret: 'test-cookie-secret-0123456789-abcdef',
+  };
+  assert.equal(loadConfig({ nodeEnv: 'production', privateConfig }).publicBasePath, '/af');
+  assert.equal(
+    loadConfig({ nodeEnv: 'production', publicBasePath: '', privateConfig }).publicBasePath,
+    '',
+    'an explicit root deployment must remain available',
+  );
+});
 
 test('public URL helpers normalize and prefix local references exactly once', () => {
   assert.equal(normalizePublicBasePath(''), '');
@@ -105,6 +129,14 @@ test('generated site, admin, API, redirects, and cookie honor PUBLIC_BASE_PATH',
   assert.equal(pages.status, 200);
   assert.deepEqual(pages.body.pages.map((page) => page.url), ['/af/', '/af/hui/']);
   assert.ok(pages.body.pages.every((page) => /^\/af\/assets\/.+\?v=[a-f0-9]{10}$/u.test(page.title_image_url)));
+
+  const republish = await request(runtime.app)
+    .post('/api/generate')
+    .set('Cookie', cookieHeader)
+    .send({});
+  assert.equal(republish.status, 200);
+  assert.equal(republish.body.publicBasePath, '/af');
+  assert.equal(republish.body.pageCount, 2);
 
   const media = await request(runtime.app)
     .get('/api/media')

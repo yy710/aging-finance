@@ -32,14 +32,17 @@ function loadConfig(overrides = {}) {
   if (typeof cookieSecret !== 'string' || cookieSecret.length < 32) {
     throw new Error('The cookie secret must contain at least 32 characters.');
   }
+  const nodeEnv = overrides.nodeEnv || process.env.NODE_ENV || 'development';
 
   return {
     rootDir: ROOT_DIR,
     host: overrides.host || process.env.HOST || '127.0.0.1',
     port: Number(overrides.port || process.env.PORT || 3100),
-    nodeEnv: overrides.nodeEnv || process.env.NODE_ENV || 'development',
+    nodeEnv,
     publicBasePath: normalizePublicBasePath(
-      overrides.publicBasePath ?? process.env.PUBLIC_BASE_PATH ?? '',
+      overrides.publicBasePath
+        ?? process.env.PUBLIC_BASE_PATH
+        ?? (nodeEnv === 'production' ? '/af' : ''),
     ),
     dbPath: overrides.dbPath || process.env.DB_PATH || path.join(ROOT_DIR, 'data', 'site.db'),
     generatedDir: overrides.generatedDir || path.join(ROOT_DIR, 'public-generated'),

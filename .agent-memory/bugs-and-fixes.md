@@ -47,4 +47,12 @@
 - Fix: keep the button at z-index 30 and remove the header's independent stacking context with `z-index: auto`; wide-screen right positioning remains aligned to the centered 720px canvas.
 - Verification: mobile scroll from 0 to 356px and desktop scroll from 0 to 400px produced zero top/right coordinate drift, hit testing selected the return link, parent navigation worked, and console/image/overlay checks were clean.
 
-Provenance: source_agent=Codex; updated=2026-07-15.
+## Production regeneration removed the `/af` resource prefix
+
+- Symptom: after running plain `npm run generate` on the production server, generated HTML referenced `/assets/...` instead of `/af/assets/...`; CSS and every image then failed behind the `/af` Nginx subpath.
+- Cause: the command-line generator defaulted to the root deployment while the PM2-managed admin publisher used `PUBLIC_BASE_PATH=/af`.
+- Fix: make `npm run generate` explicitly pass `--public-base-path /af`, retain `npm run generate:root` for direct local Express use, and default production runtime configuration to `/af` unless an explicit override is supplied.
+- Admin visibility: publication responses and the success message now report the public path used for the snapshot.
+- Verification: 18/18 tests, both root and `/af` command paths, 24 pages and 83 assets, production-style browser rendering at 1280×800 and 378×834, zero failed images or console warnings/errors, and `/af/` → `/af/hui/` navigation.
+
+Provenance: source_agent=Codex; updated=2026-07-30.

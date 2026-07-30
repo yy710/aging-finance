@@ -29,6 +29,7 @@ function usage() {
     '  --output-dir <path>      Generated site directory (default: public-generated)',
     '  --assets-dir <path>      Public asset source (default: public-assets or assets)',
     '  --uploads-dir <path>     Uploaded media source (default: uploads)',
+    '  --public-base-path <path> Public URL prefix (for example: /af)',
     '  --json                   Print only the JSON result',
     '  --help                   Show this help',
     '',
@@ -46,6 +47,7 @@ function parseArguments(argv) {
     ['--output-dir', 'outputDir'],
     ['--assets-dir', 'assetsDir'],
     ['--uploads-dir', 'uploadsDir'],
+    ['--public-base-path', 'publicBasePath'],
   ]);
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -156,6 +158,7 @@ async function main() {
     outputDir: args.outputDir,
     assetsDir: args.assetsDir,
     uploadsDir: args.uploadsDir,
+    publicBasePath: args.publicBasePath,
   });
 
   if (args.json) {
@@ -173,19 +176,22 @@ async function main() {
   );
 }
 
-main().catch((error) => {
-  const issues = Array.isArray(error.issues)
-    ? `\n${error.issues
-        .map((issue) => `- ${issue.code}: ${issue.message}`)
-        .join('\n')}`
-    : '';
-  process.stderr.write(`Static generation failed: ${error.message}${issues}\n`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    const issues = Array.isArray(error.issues)
+      ? `\n${error.issues
+          .map((issue) => `- ${issue.code}: ${issue.message}`)
+          .join('\n')}`
+      : '';
+    process.stderr.write(`Static generation failed: ${error.message}${issues}\n`);
+    process.exitCode = 1;
+  });
+}
 
 module.exports = {
   CONTENT_MODULE_CANDIDATES,
   loadJsonSnapshot,
+  main,
   parseArguments,
   resolveContentModule,
 };

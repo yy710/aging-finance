@@ -547,7 +547,8 @@
     button.textContent = '正在发布…';
     try {
       const result = await api('/generate', { method: 'POST', body: '{}' });
-      showMessage(`发布成功，共更新 ${result.pageCount ?? result.pages ?? '全部'} 个页面。`);
+      const publicPath = result.publicBasePath || '/';
+      showMessage(`发布成功，共更新 ${result.pageCount ?? result.pages ?? '全部'} 个页面，公开路径 ${publicPath}。`);
       const page = state.pages.find((item) => item.id === state.selectedPageId);
       updatePagePreview(page);
     } catch (error) {

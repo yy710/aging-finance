@@ -22,4 +22,9 @@
 - Homepage V2 keeps the public URL `/assets/images/home/tagline.png`, replaces that asset with the supplied 527×278 composition, and aligns the 720×1560 canvas to the approved design: composition at `(110, 624)`, first-row entries at `(68, 982)`, `(288, 982)`, `(507, 982)`, and second-row entries at `(183, 1153)`, `(400, 1153)`.
 - Homepage V2 browser verification covered a native 720×1560 canvas, 378×834 mobile, and 1280×800 desktop. The five entries moved down approximately 118px without overlap, clipping, or horizontal overflow; a “惠” entry navigation check passed; all images loaded and the console had no warnings or errors.
 - Homepage V2 verification baseline: `git diff --check`, `node --check public-assets/js/site.js`, `npm test` (17/17), and `PUBLIC_BASE_PATH=/af npm run generate` (24 pages, 83 hashed assets) passed.
+- Date: 2026-07-30
+- Source agent: Codex
+- Publication-path repair on `home-v2`: plain `npm run generate` now pins the production `/af` base path, while `npm run generate:root` remains available for direct local Express testing. Production runtime configuration also defaults to `/af`, and admin publication feedback reports the generated public path.
+- Verification baseline: `git diff --check`, JavaScript syntax checks, `npm test` (18/18), `npm run generate:root`, and `npm run generate` passed. The production command generated 24 pages and 83 hashed assets with `/af`-prefixed CSS/image URLs and retained the Homepage V2 CSS and 527×278 tagline.
+- Browser QA served the production snapshot under `/af` at 1280×800 and 378×834: all 11 homepage images loaded, the V2 layout rendered correctly, there was no horizontal overflow or console warning/error, and the “惠” entry navigated from `/af/` to `/af/hui/`.
 - Secrets: none recorded. Gitee credentials and local admin credentials must remain outside the repository.
